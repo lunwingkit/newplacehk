@@ -22,17 +22,14 @@ import {
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
-  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const { data: session, status } = useSession()
 
   const handleLogin = async () => {
-    setIsLoggingIn(true)
     try {
       await signIn("google", { callbackUrl: "/events" })
     } catch (error) {
       toast.error("Login failed. Please try again.")
     } finally {
-      setIsLoggingIn(false)
       setIsLoginModalOpen(false)
     }
   }
@@ -117,9 +114,9 @@ export function Navbar() {
           <DialogTitle>Login to Event Showcase</DialogTitle>
           <DialogDescription>Choose your preferred login method</DialogDescription>
         </DialogHeader>
-        <Button onClick={handleLogin} className="w-full" disabled={isLoggingIn}>
-          {isLoggingIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
-          {isLoggingIn ? "Logging in..." : "Login with Google"}
+        <Button onClick={handleLogin} className="w-full">
+          <LogIn className="mr-2 h-4 w-4" />
+          Login with Google
         </Button>
       </DialogContent>
     </Dialog>
@@ -186,7 +183,7 @@ export function Navbar() {
                         toggleMobileMenu()
                       }}
                     >
-                      {isLoggingIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Login"}
+                      Login
                     </NavItem>
                   )}
                   <ModeToggle />

@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "cockroachdb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String                @id @default(cuid())
+  name              String?
+  email             String?               @unique
+  emailVerified     DateTime?
+  image             String?
+  age               Int?
+  gender            String?
+  interests         String[]
+  introduction      String?               // Removed @db.Text
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  // Relations
+  signedUpEvents    EventsSignedUpByUsers[]
+  hostedEvents      EventsHostedByUsers[]
+}
+
+model News {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   // Removed @db.Text
+  summary     String?  // Removed @db.Text
+  image       String?
+  slug        String   @unique
+  author      String?
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isPublished Boolean  @default(false)
+  tags        String[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String   // Removed @db.Text
+  startDate   DateTime
+  endDate     DateTime
+  location    String
+  image       String?
+  price       Float
+  capacity    Int
+  currentParticipants Int @default(0)
+  category    String
+  status      EventStatus @default(UPCOMING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // Relations
+  signedUpUsers EventsSignedUpByUsers[]
+  hostedByUsers EventsHostedByUsers[]
+}
+
+model EventsSignedUpByUsers {
+  id          String   @id @default(cuid())
+  userId      String
+  eventId     String
+  signedUpAt  DateTime @default(now())
+  status      SignUpStatus @default(PENDING)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+}
+
+model EventsHostedByUsers {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  role      HostRole @default(HOST)
+  joinedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum SignUpStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum HostRole {
+  HOST
+  CO_HOST
+  ASSISTANT
+}

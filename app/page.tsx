@@ -121,8 +121,8 @@ export default function Home() {
                   ))}
                 </CarouselContent>
                 <div className="hidden md:block">
-                  <CarouselPrevious className="absolute -left-12 top-1/2 -translate-y-1/2" />
-                  <CarouselNext className="absolute -right-12 top-1/2 -translate-y-1/2" />
+                  <CarouselPrevious className="absolute -left-12 top-1/2 -translate-y-1/2" children={undefined} />
+                  <CarouselNext className="absolute -right-12 top-1/2 -translate-y-1/2" children={undefined} />
                 </div>
               </Carousel>
             </div>

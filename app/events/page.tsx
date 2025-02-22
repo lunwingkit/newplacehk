@@ -1,11 +1,23 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import { Navbar } from "@/components/navbar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { useState } from "react";
+import Image from "next/image";
+import { Navbar } from "@/components/navbar";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   Dialog,
   DialogContent,
@@ -14,19 +26,19 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { MapPin, Star, DollarSign, Loader2, Clock } from "lucide-react"
-import { toast, Toaster } from "react-hot-toast"
-import dayjs from "dayjs"
-import utc from "dayjs/plugin/utc"
-import timezone from "dayjs/plugin/timezone"
+} from "@/components/ui/dialog";
+import { MapPin, Star, DollarSign, Loader2, Clock } from "lucide-react";
+import { toast, Toaster } from "react-hot-toast";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 
 // Extend dayjs with plugins
-dayjs.extend(utc)
-dayjs.extend(timezone)
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Set the default timezone to Hong Kong
-dayjs.tz.setDefault("Asia/Hong_Kong")
+dayjs.tz.setDefault("Asia/Hong_Kong");
 
 // Dummy data for events
 const events = [
@@ -108,96 +120,102 @@ const events = [
     startTime: "2025-09-20T10:00:00Z",
     endTime: "2025-09-20T18:00:00Z",
   },
-]
+];
 
-// Group events by month
-const groupEventsByMonth = (events: typeof events) => {
-  return events.reduce(
-    (acc, event) => {
-      const month = dayjs(event.date).format("MMMM")
-      if (!acc[month]) {
-        acc[month] = []
-      }
-      acc[month].push(event)
-      return acc
-    },
-    {} as Record<string, typeof events>,
-  )
-}
+const groupEventsByMonth = (events: any[]) => {
+  return events.reduce((acc: Record<string, any[]>, event: any) => {
+    const month = dayjs(event.date).format("MMMM");
+    if (!acc[month]) {
+      acc[month] = [];
+    }
+    acc[month].push(event);
+    return acc;
+  }, {});
+};
 
 // Format event time
 const formatEventTime = (startTime: string, endTime: string) => {
-  const start = dayjs(startTime).tz()
-  const end = dayjs(endTime).tz()
+  const start = dayjs(startTime).tz();
+  const end = dayjs(endTime).tz();
 
   if (start.isSame(end, "day")) {
-    return `${start.format("YYYY/MM/DD HH:mm")} ~ ${end.format("HH:mm")}`
+    return `${start.format("YYYY/MM/DD HH:mm")} ~ ${end.format("HH:mm")}`;
   } else {
-    return `${start.format("YYYY/MM/DD HH:mm")} ~ ${end.format("YYYY/MM/DD HH:mm")}`
+    return `${start.format("YYYY/MM/DD HH:mm")} ~ ${end.format(
+      "YYYY/MM/DD HH:mm"
+    )}`;
   }
-}
+};
 
 // Simulated API calls
 const starEvent = async (eventId: number): Promise<void> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   if (Math.random() < 0.9) {
-    return Promise.resolve()
+    return Promise.resolve();
   } else {
-    return Promise.reject(new Error("Failed to star event"))
+    return Promise.reject(new Error("Failed to star event"));
   }
-}
+};
 
 const signUpForEvent = async (eventId: number): Promise<void> => {
-  await new Promise((resolve) => setTimeout(resolve, 2000))
+  await new Promise((resolve) => setTimeout(resolve, 2000));
   if (Math.random() < 0.8) {
-    return Promise.resolve()
+    return Promise.resolve();
   } else {
-    return Promise.reject(new Error("Failed to sign up for event"))
+    return Promise.reject(new Error("Failed to sign up for event"));
   }
-}
+};
 
 export default function EventsPage() {
-  const [starredEvents, setStarredEvents] = useState<number[]>([])
-  const [signedUpEvents, setSignedUpEvents] = useState<number[]>([])
-  const [loadingStars, setLoadingStars] = useState<number[]>([])
-  const [loadingSignUps, setLoadingSignUps] = useState<number[]>([])
-  const eventsByMonth = groupEventsByMonth(events)
-  const months = Object.keys(eventsByMonth)
-  const [openAccordions, setOpenAccordions] = useState<string[]>([months[0]])
+  const [starredEvents, setStarredEvents] = useState<number[]>([]);
+  const [signedUpEvents, setSignedUpEvents] = useState<number[]>([]);
+  const [loadingStars, setLoadingStars] = useState<number[]>([]);
+  const [loadingSignUps, setLoadingSignUps] = useState<number[]>([]);
+  const eventsByMonth = groupEventsByMonth(events);
+  const months = Object.keys(eventsByMonth);
+  const [openAccordions, setOpenAccordions] = useState<string[]>([months[0]]);
 
   const toggleStar = async (eventId: number) => {
-    if (loadingStars.includes(eventId)) return
+    if (loadingStars.includes(eventId)) return;
 
-    setLoadingStars((prev) => [...prev, eventId])
+    setLoadingStars((prev) => [...prev, eventId]);
     try {
-      await starEvent(eventId)
-      setStarredEvents((prev) => (prev.includes(eventId) ? prev.filter((id) => id !== eventId) : [...prev, eventId]))
-      toast.success(starredEvents.includes(eventId) ? "Event unstarred" : "Event starred")
+      await starEvent(eventId);
+      setStarredEvents((prev) =>
+        prev.includes(eventId)
+          ? prev.filter((id) => id !== eventId)
+          : [...prev, eventId]
+      );
+      toast.success(
+        starredEvents.includes(eventId) ? "Event unstarred" : "Event starred"
+      );
     } catch (error) {
-      toast.error("Failed to star event")
+      toast.error("Failed to star event");
     } finally {
-      setLoadingStars((prev) => prev.filter((id) => id !== eventId))
+      setLoadingStars((prev) => prev.filter((id) => id !== eventId));
     }
-  }
+  };
 
   const handleSignUp = async (eventId: number) => {
-    if (loadingSignUps.includes(eventId)) return
+    if (loadingSignUps.includes(eventId)) return;
 
-    setLoadingSignUps((prev) => [...prev, eventId])
+    setLoadingSignUps((prev) => [...prev, eventId]);
     try {
-      await signUpForEvent(eventId)
-      setSignedUpEvents((prev) => [...prev, eventId])
-      toast.success("Successfully signed up for event")
+      await signUpForEvent(eventId);
+      setSignedUpEvents((prev) => [...prev, eventId]);
+      toast.success("Successfully signed up for event");
     } catch (error) {
-      toast.error("Failed to sign up for event")
+      toast.error("Failed to sign up for event");
     } finally {
-      setLoadingSignUps((prev) => prev.filter((id) => id !== eventId))
+      setLoadingSignUps((prev) => prev.filter((id) => id !== eventId));
     }
-  }
+  };
 
   const toggleAccordion = (month: string) => {
-    setOpenAccordions((prev) => (prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]))
-  }
+    setOpenAccordions((prev) =>
+      prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]
+    );
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -206,13 +224,19 @@ export default function EventsPage() {
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Upcoming Events</h1>
 
-        <Accordion type="multiple" value={openAccordions} onValueChange={setOpenAccordions}>
+        <Accordion
+          type="multiple"
+          value={openAccordions}
+          onValueChange={setOpenAccordions}
+        >
           {months.map((month) => (
             <AccordionItem key={month} value={month}>
-              <AccordionTrigger onClick={() => toggleAccordion(month)}>{month}</AccordionTrigger>
+              <AccordionTrigger onClick={() => toggleAccordion(month)}>
+                {month}
+              </AccordionTrigger>
               <AccordionContent>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {eventsByMonth[month].map((event) => (
+                  {eventsByMonth[month].map((event: any) => (
                     <Card key={event.id} className="relative flex flex-col">
                       <Button
                         variant="ghost"
@@ -226,7 +250,9 @@ export default function EventsPage() {
                         ) : (
                           <Star
                             className={`w-6 h-6 ${
-                              starredEvents.includes(event.id) ? "fill-yellow-400" : "fill-transparent"
+                              starredEvents.includes(event.id)
+                                ? "fill-yellow-400"
+                                : "fill-transparent"
                             }`}
                           />
                         )}
@@ -250,7 +276,8 @@ export default function EventsPage() {
                             {event.location}
                           </div>
                           <div className="flex items-center mt-1">
-                            <DollarSign className="w-4 h-4 mr-1" />${event.price}
+                            <DollarSign className="w-4 h-4 mr-1" />$
+                            {event.price}
                           </div>
                         </CardDescription>
                       </CardHeader>
@@ -267,7 +294,11 @@ export default function EventsPage() {
                               <DialogHeader>
                                 <DialogTitle>{event.title}</DialogTitle>
                                 <DialogDescription>
-                                  {formatEventTime(event.startTime, event.endTime)} | {event.location}
+                                  {formatEventTime(
+                                    event.startTime,
+                                    event.endTime
+                                  )}{" "}
+                                  | {event.location}
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="mt-4">
@@ -291,7 +322,9 @@ export default function EventsPage() {
                                       ) : (
                                         <Star
                                           className={`w-6 h-6 ${
-                                            starredEvents.includes(event.id) ? "fill-yellow-400" : "fill-transparent"
+                                            starredEvents.includes(event.id)
+                                              ? "fill-yellow-400"
+                                              : "fill-transparent"
                                           }`}
                                         />
                                       )}
@@ -299,13 +332,18 @@ export default function EventsPage() {
                                   </div>
                                 </div>
                                 <p className="mt-4">{event.details}</p>
-                                <p className="mt-2 font-semibold">Price: ${event.price}</p>
+                                <p className="mt-2 font-semibold">
+                                  Price: ${event.price}
+                                </p>
                               </div>
                               <DialogFooter className="mt-4">
                                 <Button
                                   className="w-full"
                                   onClick={() => handleSignUp(event.id)}
-                                  disabled={signedUpEvents.includes(event.id) || loadingSignUps.includes(event.id)}
+                                  disabled={
+                                    signedUpEvents.includes(event.id) ||
+                                    loadingSignUps.includes(event.id)
+                                  }
                                 >
                                   {loadingSignUps.includes(event.id) ? (
                                     <>
@@ -323,7 +361,10 @@ export default function EventsPage() {
                           </Dialog>
                           <Button
                             onClick={() => handleSignUp(event.id)}
-                            disabled={signedUpEvents.includes(event.id) || loadingSignUps.includes(event.id)}
+                            disabled={
+                              signedUpEvents.includes(event.id) ||
+                              loadingSignUps.includes(event.id)
+                            }
                           >
                             {loadingSignUps.includes(event.id) ? (
                               <>
@@ -354,6 +395,5 @@ export default function EventsPage() {
       </footer>
       <Toaster position="bottom-right" />
     </div>
-  )
+  );
 }
-

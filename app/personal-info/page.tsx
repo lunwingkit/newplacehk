@@ -1,10 +1,8 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
-
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,88 +13,57 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TagManager } from "@/components/tag-manager"
 import { toast, Toaster } from "react-hot-toast"
 import { Loader2 } from "lucide-react"
+import { getSession } from "next-auth/react"
 
-interface PersonalInfo {
-  name: string
-  age: string
-  gender: string
-  interests: string[]
-  expectedPartner: string
-  introduction: string
-  selfIntro: string[]
-  expectationForBetterHalf: string[]
-}
-
-const PREDEFINED_INTERESTS = [
-  "Reading",
-  "Traveling",
-  "Cooking",
-  "Sports",
-  "Music",
-  "Movies",
-  "Art",
-  "Photography",
-  "Dancing",
-  "Hiking",
-]
-
-const PREDEFINED_SELF_INTRO = [
-  "Friendly",
-  "Outgoing",
-  "Creative",
-  "Ambitious",
-  "Adventurous",
-  "Intellectual",
-  "Romantic",
-  "Practical",
-]
-
-const PREDEFINED_EXPECTATIONS = [
-  "Kind",
-  "Supportive",
-  "Honest",
-  "Ambitious",
-  "Family-oriented",
-  "Adventurous",
-  "Intellectual",
-  "Romantic",
-]
+const PREDEFINED_INTERESTS = ["Reading", "Traveling", "Cooking", "Sports", "Music", "Movies", "Art", "Photography", "Dancing", "Hiking"]
+const PREDEFINED_SELF_INTRO = ["Friendly", "Outgoing", "Creative", "Ambitious", "Adventurous", "Intellectual", "Romantic", "Practical"]
+const PREDEFINED_EXPECTATIONS = ["Kind", "Supportive", "Honest", "Ambitious", "Family-oriented", "Adventurous", "Intellectual", "Romantic"]
 
 export default function PersonalInfoPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
-    name: "John Doe",
-    age: "30",
-    gender: "Male",
-    interests: ["Hiking", "Reading", "Cooking"],
-    expectedPartner: "Someone who enjoys outdoor activities, values personal growth, and has a good sense of humor.",
-    introduction:
-      "I'm an adventurous person who loves to explore new places and try new things. I'm passionate about cooking and enjoy hosting dinner parties for my friends.",
-    selfIntro: ["Friendly", "Outgoing"],
-    expectationForBetterHalf: ["Kind", "Adventurous"],
-  })
+  const [user, setUser] = useState<any>(null)
+
+  // Fetch user data
+  useEffect(() => {
+    const fetchUser = async () => {
+      const session = await getSession()
+      if (!session?.user?.email) return
+
+      try {
+        const res = await fetch(`/api/user?email=${session.user.email}`)
+        if (res.ok) {
+          const data = await res.json()
+          setUser(data)
+        } else {
+          toast.error("Failed to load user data")
+        }
+      } catch (error) {
+        toast.error("Error fetching user data")
+      }
+    }
+
+    fetchUser()
+  }, [])
 
   const handleEdit = () => setIsEditing(true)
   const handleCancel = () => setIsEditing(false)
+
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const response = await fetch("/api/update-personal-info", {
+      const response = await fetch("/api/user/update", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(personalInfo),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(user),
       })
 
       const data = await response.json()
-
       if (response.ok) {
-        toast.success(data.message)
+        toast.success("Profile updated successfully!")
         setIsEditing(false)
       } else {
-        toast.error(data.message)
+        toast.error(data.message || "Error updating profile")
       }
     } catch (error) {
       toast.error("An error occurred while saving")
@@ -107,22 +74,22 @@ export default function PersonalInfoPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setPersonalInfo((prev) => ({ ...prev, [name]: value }))
+    setUser((prev: any) => ({ ...prev, [name]: value }))
   }
 
-  const handleGenderChange = (value: string) => {
-    setPersonalInfo((prev) => ({ ...prev, gender: value }))
-  }
+  const handleGenderChange = (value: string) => setUser((prev: any) => ({ ...prev, gender: value }))
 
-  const handleAddTag = (field: keyof PersonalInfo) => (tag: string) => {
-    if (tag && !personalInfo[field].includes(tag)) {
-      setPersonalInfo((prev) => ({ ...prev, [field]: [...prev[field], tag] }))
+  const handleAddTag = (field: string) => (tag: string) => {
+    if (!user[field]?.includes(tag)) {
+      setUser((prev: any) => ({ ...prev, [field]: [...(prev[field] || []), tag] }))
     }
   }
 
-  const handleRemoveTag = (field: keyof PersonalInfo) => (tag: string) => {
-    setPersonalInfo((prev) => ({ ...prev, [field]: prev[field].filter((t) => t !== tag) }))
+  const handleRemoveTag = (field: string) => (tag: string) => {
+    setUser((prev: any) => ({ ...prev, [field]: prev[field].filter((t: string) => t !== tag) }))
   }
+
+  if (!user) return <p>Loading...</p>
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -136,24 +103,16 @@ export default function PersonalInfoPage() {
             <div className="space-y-6">
               <div>
                 <Label htmlFor="name">Name</Label>
-                {isEditing ? (
-                  <Input id="name" name="name" value={personalInfo.name} onChange={handleChange} />
-                ) : (
-                  <p className="mt-1">{personalInfo.name}</p>
-                )}
+                {isEditing ? <Input id="name" name="name" value={user.name} onChange={handleChange} /> : <p className="mt-1">{user.name}</p>}
               </div>
               <div>
                 <Label htmlFor="age">Age</Label>
-                {isEditing ? (
-                  <Input id="age" name="age" value={personalInfo.age} onChange={handleChange} />
-                ) : (
-                  <p className="mt-1">{personalInfo.age}</p>
-                )}
+                {isEditing ? <Input id="age" name="age" value={user.age || ""} onChange={handleChange} /> : <p className="mt-1">{user.age}</p>}
               </div>
               <div>
                 <Label htmlFor="gender">Gender</Label>
                 {isEditing ? (
-                  <Select onValueChange={handleGenderChange} defaultValue={personalInfo.gender}>
+                  <Select onValueChange={handleGenderChange} defaultValue={user.gender}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
@@ -164,34 +123,14 @@ export default function PersonalInfoPage() {
                     </SelectContent>
                   </Select>
                 ) : (
-                  <p className="mt-1">{personalInfo.gender}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="selfIntro">Self Introduction</Label>
-                {isEditing ? (
-                  <TagManager
-                    tags={personalInfo.selfIntro}
-                    onAddTag={handleAddTag("selfIntro")}
-                    onRemoveTag={handleRemoveTag("selfIntro")}
-                    predefinedOptions={PREDEFINED_SELF_INTRO}
-                    placeholder="Add self introduction tag"
-                  />
-                ) : (
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {personalInfo.selfIntro.map((tag) => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+                  <p className="mt-1">{user.gender}</p>
                 )}
               </div>
               <div>
                 <Label htmlFor="interests">Interests</Label>
                 {isEditing ? (
                   <TagManager
-                    tags={personalInfo.interests}
+                    tags={user.interests || []}
                     onAddTag={handleAddTag("interests")}
                     onRemoveTag={handleRemoveTag("interests")}
                     predefinedOptions={PREDEFINED_INTERESTS}
@@ -199,7 +138,7 @@ export default function PersonalInfoPage() {
                   />
                 ) : (
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {personalInfo.interests.map((interest) => (
+                    {user.interests?.map((interest: string) => (
                       <Badge key={interest} variant="secondary">
                         {interest}
                       </Badge>
@@ -208,50 +147,18 @@ export default function PersonalInfoPage() {
                 )}
               </div>
               <div>
-                <Label htmlFor="expectationForBetterHalf">Expected Partner Type</Label>
+                <Label htmlFor="introduction">Introduction</Label>
                 {isEditing ? (
-                  <TagManager
-                    tags={personalInfo.expectationForBetterHalf}
-                    onAddTag={handleAddTag("expectationForBetterHalf")}
-                    onRemoveTag={handleRemoveTag("expectationForBetterHalf")}
-                    predefinedOptions={PREDEFINED_EXPECTATIONS}
-                    placeholder="Add expectation"
-                  />
+                  <Textarea id="introduction" name="introduction" value={user.introduction || ""} onChange={handleChange} />
                 ) : (
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {personalInfo.expectationForBetterHalf.map((expectation) => (
-                      <Badge key={expectation} variant="secondary">
-                        {expectation}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="introduction">Self Introduction</Label>
-                {isEditing ? (
-                  <Textarea
-                    id="introduction"
-                    name="introduction"
-                    value={personalInfo.introduction}
-                    onChange={handleChange}
-                  />
-                ) : (
-                  <p className="mt-1">{personalInfo.introduction}</p>
+                  <p className="mt-1">{user.introduction}</p>
                 )}
               </div>
               <div className="flex justify-end space-x-4 mt-6">
                 {isEditing ? (
                   <>
                     <Button onClick={handleSave} disabled={isSaving}>
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving
-                        </>
-                      ) : (
-                        "Save"
-                      )}
+                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save"}
                     </Button>
                     <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
                       Cancel
@@ -269,4 +176,3 @@ export default function PersonalInfoPage() {
     </div>
   )
 }
-

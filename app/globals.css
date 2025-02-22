@@ -17,7 +17,7 @@
     --primary-foreground: 210 40% 98%;
     --primary-light: 201 100% 46%; /* Lighter shade of marine blue for hover */
 
-    --secondary: 210 40% 96.1%;
+    /* --secondary: 210 40% 96.1%; */
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
@@ -98,5 +98,14 @@
 * {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary)) hsl(var(--background));
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 

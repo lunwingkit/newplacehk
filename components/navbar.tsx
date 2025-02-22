@@ -1,15 +1,30 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Menu, User, X, Calendar, Info, LogOut, Settings, LogIn, Loader2 } from "lucide-react"
-import { Toaster, toast } from "react-hot-toast"
-import { ModeToggle } from "@/components/mode-toggle"
-import { signIn, signOut, useSession } from "next-auth/react"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Menu,
+  User,
+  X,
+  Calendar,
+  Info,
+  LogOut,
+  Settings,
+  LogIn,
+  Loader2,
+} from "lucide-react";
+import { Toaster, toast } from "react-hot-toast";
+import { ModeToggle } from "@/components/mode-toggle";
+import { signIn, signOut, useSession } from "next-auth/react";
 import {
   Dialog,
   DialogContent,
@@ -17,60 +32,70 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
 export function Navbar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
-  const { data: session, status } = useSession()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const { data: session, status } = useSession();
 
   const handleLogin = async () => {
     try {
-      await signIn("google", { callbackUrl: "/events" })
+      await signIn("google", { callbackUrl: "/events" });
     } catch (error) {
-      toast.error("Login failed. Please try again.")
+      toast.error("Login failed. Please try again.");
     } finally {
-      setIsLoginModalOpen(false)
+      setIsLoginModalOpen(false);
     }
-  }
+  };
 
   const handleLogout = async () => {
-    await signOut()
-    toast.success("Logged out successfully")
-  }
+    await signOut();
+    toast.success("Logged out successfully");
+  };
 
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "unset"
-  }, [isMobileMenuOpen])
+    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "unset";
+  }, [isMobileMenuOpen]);
 
   const NavItem = ({
     href,
     icon: Icon,
     children,
     onClick,
-  }: { href?: string; icon: React.ElementType; children: React.ReactNode; onClick?: () => void }) => {
+  }: {
+    href?: string;
+    icon: React.ElementType;
+    children: React.ReactNode;
+    onClick?: () => void;
+  }) => {
     const content = (
       <>
         <Icon className="h-4 w-4 mr-2" />
         {children}
       </>
-    )
+    );
 
     return (
-      <Button variant="ghost" className="w-full justify-start" onClick={onClick} asChild={!!href}>
+      <Button
+        variant="ghost"
+        className="w-full justify-start"
+        onClick={onClick}
+        asChild={!!href}
+      >
         {href ? <Link href={href}>{content}</Link> : content}
       </Button>
-    )
-  }
+    );
+  };
 
   const UserMenu = () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="w-full justify-start">
+        <Button variant="ghost" className="w-full justify-start ">
           <User className="h-4 w-4 mr-2" />
-          {session?.user?.name}
+          User
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -96,7 +121,7 @@ export function Navbar() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 
   const AccountMenu = () => (
     <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
@@ -112,7 +137,9 @@ export function Navbar() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Login to Event Showcase</DialogTitle>
-          <DialogDescription>Choose your preferred login method</DialogDescription>
+          <DialogDescription>
+            Choose your preferred login method
+          </DialogDescription>
         </DialogHeader>
         <Button onClick={handleLogin} className="w-full">
           <LogIn className="mr-2 h-4 w-4" />
@@ -120,7 +147,7 @@ export function Navbar() {
         </Button>
       </DialogContent>
     </Dialog>
-  )
+  );
 
   return (
     <>
@@ -141,8 +168,17 @@ export function Navbar() {
             </nav>
 
             {/* Mobile Menu Button */}
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleMobileMenu}>
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={toggleMobileMenu}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </Button>
           </div>
 
@@ -151,25 +187,41 @@ export function Navbar() {
             <div className="fixed inset-0 top-16 bg-primary dark:bg-black z-50 md:hidden overflow-y-auto">
               <div className="container mx-auto px-4 py-4">
                 <nav className="flex flex-col space-y-1">
-                  <NavItem href="/events" icon={Calendar} onClick={toggleMobileMenu}>
+                  <NavItem
+                    href="/events"
+                    icon={Calendar}
+                    onClick={toggleMobileMenu}
+                  >
                     Events
                   </NavItem>
                   {session?.user ? (
                     <>
-                      <NavItem href="/my-events" icon={Calendar} onClick={toggleMobileMenu}>
+                      <NavItem
+                        href="/my-events"
+                        icon={Calendar}
+                        onClick={toggleMobileMenu}
+                      >
                         My Events
                       </NavItem>
-                      <NavItem href="/personal-info" icon={Info} onClick={toggleMobileMenu}>
+                      <NavItem
+                        href="/personal-info"
+                        icon={Info}
+                        onClick={toggleMobileMenu}
+                      >
                         Personal Info
                       </NavItem>
-                      <NavItem href="/admin" icon={Settings} onClick={toggleMobileMenu}>
+                      <NavItem
+                        href="/admin"
+                        icon={Settings}
+                        onClick={toggleMobileMenu}
+                      >
                         Admin Dashboard
                       </NavItem>
                       <NavItem
                         icon={LogOut}
                         onClick={() => {
-                          handleLogout()
-                          toggleMobileMenu()
+                          handleLogout();
+                          toggleMobileMenu();
                         }}
                       >
                         Logout
@@ -179,8 +231,8 @@ export function Navbar() {
                     <NavItem
                       icon={LogIn}
                       onClick={() => {
-                        handleLogin()
-                        toggleMobileMenu()
+                        handleLogin();
+                        toggleMobileMenu();
                       }}
                     >
                       Login
@@ -195,6 +247,5 @@ export function Navbar() {
       </header>
       <Toaster position="bottom-right" />
     </>
-  )
+  );
 }
-

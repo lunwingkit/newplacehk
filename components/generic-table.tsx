@@ -1,26 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-} from "@tanstack/react-table"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { type ColumnDef, flexRender, getCoreRowModel, useReactTable, type PaginationState } from "@tanstack/react-table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Pencil, Trash2, Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { fetchUsers, fetchEvents, fetchNews, deleteUser, deleteEvent, deleteNews } from "@/lib/api"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface GenericTableProps<TData> {
   columns: ColumnDef<TData, any>[]
@@ -28,14 +15,12 @@ interface GenericTableProps<TData> {
   onEdit: (item: TData) => void
   onAdd: () => void
   idAccessor: (item: TData) => string
-}
-
-type DataType = 'users' | 'events' | 'news'
-
-const apiFunctions = {
-  users: { fetch: fetchUsers, delete: deleteUser },
-  events: { fetch: fetchEvents, delete: deleteEvent },
-  news: { fetch: fetchNews, delete: deleteNews },
+  fetchFunction: (params: { page: number; pageSize: number }) => Promise<{
+    items: TData[]
+    totalPages: number
+    totalCount: number
+  }>
+  deleteFunction: (id: string) => Promise<void>
 }
 
 export function GenericTable<TData>({
@@ -44,15 +29,38 @@ export function GenericTable<TData>({
   onEdit,
   onAdd,
   idAccessor,
+  fetchFunction,
+  deleteFunction,
 }: GenericTableProps<TData>) {
   const { toast } = useToast()
-
-  const { fetch: fetchFunction, delete: deleteFunction } = apiFunctions[type]
+  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+  const [paginationInfo, setPaginationInfo] = useState("")
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: [type],
-    queryFn: fetchFunction,
+    queryKey: [type, pageIndex, pageSize],
+    queryFn: () => fetchFunction({ page: pageIndex + 1, pageSize }),
   })
+
+  useEffect(() => {
+    if (isLoading) {
+      setPaginationInfo("")
+    } else if (data) {
+      const { items, totalCount } = data
+      if (totalCount === 0) {
+        setPaginationInfo("No entries to show")
+      } else {
+        console.log(items);
+        const startIndex = pageIndex * pageSize + 1
+        const endIndex = startIndex + items.length - 1
+        setPaginationInfo(`Showing ${startIndex} to ${endIndex} of ${totalCount} entries`)
+      }
+    } else {
+      setPaginationInfo("No entries to show")
+    }
+  }, [data, isLoading, pageIndex, pageSize])
 
   const handleDelete = async (item: TData) => {
     try {
@@ -72,26 +80,39 @@ export function GenericTable<TData>({
   }
 
   const table = useReactTable({
-    data: data || [],
+    data: data?.items ?? [],
     columns,
+    pageCount: data?.totalPages ?? 1,
+    state: {
+      pagination: { pageIndex, pageSize },
+    },
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
   })
 
+  const canPreviousPage = pageIndex > 0
+  const canNextPage = pageIndex < (data?.totalPages ?? 1) - 1 && (data?.totalCount ?? 0) > 0
+
   const renderPaginationButtons = () => {
-    const currentPage = table.getState().pagination.pageIndex + 1
-    const totalPages = table.getPageCount()
+    const currentPage = pageIndex + 1
+    const totalPages = data?.totalPages ?? 1
     const buttons = []
 
     buttons.push(
-      <Button key="prev" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+      <Button key="prev" onClick={() => table.previousPage()} disabled={!canPreviousPage}>
         Prev
       </Button>,
     )
 
     // Always show first page
     buttons.push(
-      <Button key={1} onClick={() => table.setPageIndex(0)} variant={currentPage === 1 ? "default" : "outline"}>
+      <Button
+        key={1}
+        onClick={() => table.setPageIndex(0)}
+        variant={currentPage === 1 ? "default" : "outline"}
+        disabled={currentPage === 1}
+      >
         1
       </Button>,
     )
@@ -105,7 +126,12 @@ export function GenericTable<TData>({
     for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
       if (i === 1 || i === totalPages) continue // Skip first and last page as they're always shown
       buttons.push(
-        <Button key={i} onClick={() => table.setPageIndex(i - 1)} variant={currentPage === i ? "default" : "outline"}>
+        <Button
+          key={i}
+          onClick={() => table.setPageIndex(i - 1)}
+          variant={currentPage === i ? "default" : "outline"}
+          disabled={currentPage === i}
+        >
           {i}
         </Button>,
       )
@@ -116,13 +142,14 @@ export function GenericTable<TData>({
       buttons.push(<span key="ellipsis2">...</span>)
     }
 
-    // Always show last page
+    // Always show last page if there's more than one page
     if (totalPages > 1) {
       buttons.push(
         <Button
           key={totalPages}
           onClick={() => table.setPageIndex(totalPages - 1)}
           variant={currentPage === totalPages ? "default" : "outline"}
+          disabled={currentPage === totalPages}
         >
           {totalPages}
         </Button>,
@@ -130,7 +157,7 @@ export function GenericTable<TData>({
     }
 
     buttons.push(
-      <Button key="next" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+      <Button key="next" onClick={() => table.nextPage()} disabled={!canNextPage}>
         Next
       </Button>,
     )
@@ -140,9 +167,21 @@ export function GenericTable<TData>({
 
   return (
     <div>
-      <Button onClick={onAdd} className="mb-4">
-        Add New
-      </Button>
+      <div className="flex justify-between items-center mb-4">
+        <Button onClick={onAdd}>Add New</Button>
+        <Select value={pageSize.toString()} onValueChange={(value) => table.setPageSize(Number(value))}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select page size" />
+          </SelectTrigger>
+          <SelectContent>
+            {[10, 20, 30, 40, 50].map((size) => (
+              <SelectItem key={size} value={size.toString()}>
+                {size} per page
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -173,7 +212,7 @@ export function GenericTable<TData>({
                   Error loading data. Please try again.
                 </TableCell>
               </TableRow>
-            ) : table.getRowModel().rows?.length ? (
+            ) : data?.items && data?.items.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={idAccessor(row.original)} data-state={row.getIsSelected() && "selected"}>
                   {row.getVisibleCells().map((cell) => (
@@ -199,7 +238,11 @@ export function GenericTable<TData>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-center space-x-2 py-4">{renderPaginationButtons()}</div>
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div>{paginationInfo}</div>
+        <div className="flex space-x-2">{renderPaginationButtons()}</div>
+      </div>
     </div>
   )
 }
+

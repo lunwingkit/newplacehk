@@ -46,7 +46,7 @@ export default function NewsModal({ isOpen, onClose, news }: NewsModalProps) {
         author: news.author || "",
         publishedAt: news.publishedAt,
         isPublished: news.isPublished,
-        tags: news.tags.join(", "),
+        tags: news.tags?.join(", ") || [],
       });
     } else {
       setFormData({

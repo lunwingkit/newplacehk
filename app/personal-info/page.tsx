@@ -172,7 +172,6 @@ export default function PersonalInfoPage() {
           </CardContent>
         </Card>
       </main>
-      <Toaster position="bottom-right" />
     </div>
   )
 }

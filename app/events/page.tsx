@@ -393,7 +393,6 @@ export default function EventsPage() {
           <p>&copy; 2025 Event Showcase. All rights reserved.</p>
         </div>
       </footer>
-      <Toaster position="bottom-right" />
     </div>
   );
 }

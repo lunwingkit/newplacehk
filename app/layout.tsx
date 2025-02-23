@@ -30,6 +30,7 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               {children}
+              <Toaster />
             </ThemeProvider>
           </SessionProvider>
         </QQueryClientProvider>
@@ -40,3 +41,4 @@ export default function RootLayout({
 
 import "./globals.css";
 import { QQueryClientProvider } from "@/components/query-client-provider";
+import { Toaster } from "@/components/ui/toaster";

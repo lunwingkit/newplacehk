@@ -33,7 +33,7 @@ export default function UserModal({ isOpen, onClose, user }: UserModalProps) {
       setFormData({
         name: user.name,
         email: user.email,
-        age: user.age.toString(),
+        age: user.age,
       });
     } else {
       setFormData({

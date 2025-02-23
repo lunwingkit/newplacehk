@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -9,57 +9,124 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Navbar } from "@/components/navbar"
-import { GenericTable } from "@/components/generic-table"
-import UserModal from "./user-modal"
-import EventModal from "./event-modal"
-import NewsModal from "./news-modal"
-import type { ColumnDef } from "@tanstack/react-table"
+import { Navbar } from "@/components/navbar";
+import { GenericTable } from "@/components/generic-table";
+import UserModal from "./user-modal";
+import EventModal from "./event-modal";
+import NewsModal from "./news-modal";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Toaster } from "react-hot-toast";
 
 interface User {
-  id: string
-  name: string
-  email: string
-  age: number
+  id: string;
+  name: string;
+  email: string;
+  age: number;
 }
 
 interface Event {
-  id: string
-  title: string
-  startDate: string
-  location: string
+  id: string;
+  title: string;
+  startDate: string;
+  location: string;
 }
 
 interface News {
-  id: string
-  title: string
-  publishedAt: string
-  author: string
+  id: string;
+  title: string;
+  publishedAt: string;
+  author: string;
+}
+
+// API functions
+async function fetchUsers({
+  page,
+  pageSize,
+}: {
+  page: number;
+  pageSize: number;
+}) {
+  const response = await fetch(`/api/users?page=${page}&pageSize=${pageSize}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch users");
+  }
+  return response.json();
+}
+
+async function deleteUser(id: string) {
+  const response = await fetch(`/api/users/${id}`, { method: "DELETE" });
+  if (!response.ok) {
+    throw new Error("Failed to delete user");
+  }
+}
+
+async function fetchEvents({
+  page,
+  pageSize,
+}: {
+  page: number;
+  pageSize: number;
+}) {
+  const response = await fetch(`/api/events?page=${page}&pageSize=${pageSize}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch events");
+  }
+  return response.json();
+}
+
+async function deleteEvent(id: string) {
+  const response = await fetch(`/api/events/${id}`, { method: "DELETE" });
+  if (!response.ok) {
+    throw new Error("Failed to delete event");
+  }
+}
+
+async function fetchNews({
+  page,
+  pageSize,
+}: {
+  page: number;
+  pageSize: number;
+}) {
+  const response = await fetch(`/api/news?page=${page}&pageSize=${pageSize}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch news");
+  }
+  return response.json();
+}
+
+async function deleteNews(id: string) {
+  const response = await fetch(`/api/news/${id}`, { method: "DELETE" });
+  if (!response.ok) {
+    throw new Error("Failed to delete news");
+  }
 }
 
 export default function AdminDashboard() {
-  const [isUserModalOpen, setIsUserModalOpen] = useState(false)
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
-  const [isNewsModalOpen, setIsNewsModalOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<User | Event | News | null>(null)
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<User | Event | News | null>(
+    null
+  );
 
   const userColumns: ColumnDef<User>[] = [
     { accessorKey: "name", header: "Name" },
     { accessorKey: "email", header: "Email" },
     { accessorKey: "age", header: "Age" },
-  ]
+  ];
 
   const eventColumns: ColumnDef<Event>[] = [
     { accessorKey: "title", header: "Title" },
     { accessorKey: "startDate", header: "Start Date" },
     { accessorKey: "location", header: "Location" },
-  ]
+  ];
 
   const newsColumns: ColumnDef<News>[] = [
     { accessorKey: "title", header: "Title" },
     { accessorKey: "publishedAt", header: "Published At" },
     { accessorKey: "author", header: "Author" },
-  ]
+  ];
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -91,6 +158,8 @@ export default function AdminDashboard() {
                     setIsUserModalOpen(true);
                   }}
                   idAccessor={(user) => user.id}
+                  fetchFunction={fetchUsers}
+                  deleteFunction={deleteUser}
                 />
               </CardContent>
             </Card>
@@ -114,6 +183,8 @@ export default function AdminDashboard() {
                     setIsEventModalOpen(true);
                   }}
                   idAccessor={(event) => event.id}
+                  fetchFunction={fetchEvents}
+                  deleteFunction={deleteEvent}
                 />
               </CardContent>
             </Card>
@@ -139,15 +210,29 @@ export default function AdminDashboard() {
                     setIsNewsModalOpen(true);
                   }}
                   idAccessor={(news) => news.id}
+                  fetchFunction={fetchNews}
+                  deleteFunction={deleteNews}
                 />
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
-      <UserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} user={selectedItem as User} />
-      <EventModal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} event={selectedItem as Event} />
-      <NewsModal isOpen={isNewsModalOpen} onClose={() => setIsNewsModalOpen(false)} news={selectedItem as News} />
+      <UserModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        user={selectedItem as User}
+      />
+      <EventModal
+        isOpen={isEventModalOpen}
+        onClose={() => setIsEventModalOpen(false)}
+        event={selectedItem as Event}
+      />
+      <NewsModal
+        isOpen={isNewsModalOpen}
+        onClose={() => setIsNewsModalOpen(false)}
+        news={selectedItem as News}
+      />
     </div>
-  )
+  );
 }

@@ -8,27 +8,27 @@ datasource db {
 }
 
 model User {
-  id                String                @id @default(cuid())
-  name              String?
-  email             String?               @unique
-  emailVerified     DateTime?
-  image             String?
-  age               Int?
-  gender            String?
-  interests         String[]
-  introduction      String?               // Removed @db.Text
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  id             String                  @id @default(cuid())
+  name           String?
+  email          String?                 @unique
+  emailVerified  DateTime?
+  image          String?
+  age            Int?
+  gender         String?
+  interests      String[]
+  introduction   String? // Removed @db.Text
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
   // Relations
-  signedUpEvents    EventsSignedUpByUsers[]
-  hostedEvents      EventsHostedByUsers[]
+  signedUpEvents EventsSignedUpByUsers[]
+  hostedEvents   EventsHostedByUsers[]
 }
 
 model News {
   id          String   @id @default(cuid())
   title       String
-  content     String   // Removed @db.Text
-  summary     String?  // Removed @db.Text
+  content     String // Removed @db.Text
+  summary     String? // Removed @db.Text
   image       String?
   slug        String   @unique
   author      String?
@@ -40,33 +40,45 @@ model News {
 }
 
 model Event {
-  id          String   @id @default(cuid())
-  title       String
-  description String   // Removed @db.Text
-  startDate   DateTime
-  endDate     DateTime
-  location    String
-  image       String?
-  price       Float
-  capacity    Int
-  currentParticipants Int @default(0)
-  category    String
-  status      EventStatus @default(UPCOMING)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  // Relations
+  id            String                  @id @default(cuid())
+  title         String
+  description   String
+  startDate     DateTime
+  endDate       DateTime
+  location      String
+  image         String?
+  capacity      Int
+  category      String?
+  status        EventStatus             @default(PREPARING)
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  priceSchemes  PriceScheme[]
   signedUpUsers EventsSignedUpByUsers[]
   hostedByUsers EventsHostedByUsers[]
 }
 
+model PriceScheme {
+  id            String                  @id @default(cuid())
+  name          String
+  description   String?
+  price         Float
+  event         Event                   @relation(fields: [eventId], references: [id])
+  eventId       String
+  registrations EventsSignedUpByUsers[]
+
+  @@index([eventId])
+}
+
 model EventsSignedUpByUsers {
-  id          String   @id @default(cuid())
-  userId      String
-  eventId     String
-  signedUpAt  DateTime @default(now())
-  status      SignUpStatus @default(PENDING)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id            String       @id @default(cuid())
+  userId        String
+  eventId       String
+  priceScheme   PriceScheme  @relation(fields: [priceSchemeId], references: [id])
+  priceSchemeId String
+  signedUpAt    DateTime     @default(now())
+  status        SignUpStatus @default(PENDING)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event         Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@index([userId])
@@ -74,13 +86,13 @@ model EventsSignedUpByUsers {
 }
 
 model EventsHostedByUsers {
-  id        String   @id @default(cuid())
-  userId    String
-  eventId   String
-  role      HostRole @default(HOST)
-  joinedAt  DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id       String   @id @default(cuid())
+  userId   String
+  eventId  String
+  role     HostRole @default(HOST)
+  joinedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@index([userId])
@@ -88,6 +100,7 @@ model EventsHostedByUsers {
 }
 
 enum EventStatus {
+  PREPARING
   UPCOMING
   ONGOING
   COMPLETED

@@ -245,7 +245,6 @@ export function Navbar() {
           )}
         </div>
       </header>
-      <Toaster position="bottom-right" />
     </>
   );
 }

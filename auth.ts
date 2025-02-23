@@ -12,13 +12,32 @@ const authOptions: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    async signIn({ user }) {
-      try {
-        console.log("hello");
-        console.log(user);
-      } catch (error) {
-        console.error("Error saving user to DB:", error);
-        return false;
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        // Check if user exists
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+        });
+
+        if (!existingUser) {
+          // Create new user if they don't exist
+          await prisma.user.create({
+            data: {
+              name: user.name!,
+              email: user.email!,
+              image: user.image,
+            },
+          });
+        } else {
+          // Update existing user's information
+          await prisma.user.update({
+            where: { email: user.email! },
+            data: {
+              name: user.name!,
+              image: user.image,
+            },
+          });
+        }
       }
       return true;
     },

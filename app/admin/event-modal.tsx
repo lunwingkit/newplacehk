@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toast"
 import { upsertEvent } from "@/lib/api"
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -17,6 +16,8 @@ import { cn } from "@/lib/utils"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { eventStatuses, locations, categories } from "@/lib/constant"
+import { DateTimePicker24h } from "@/components/ui/date-time-picker-24h"
+import { useToast } from "@/hooks/use-toast"
 
 interface EventModalProps {
   isOpen: boolean
@@ -27,8 +28,8 @@ interface EventModalProps {
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().min(1, "End date is required"),
+  startDate: z.date({ required_error: "Start date is required" }),
+  endDate: z.date({ required_error: "End date is required" }),
   location: z.string().min(1, "Location is required"),
   capacity: z
     .string()
@@ -53,8 +54,8 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
     defaultValues: {
       title: "",
       description: "",
-      startDate: "",
-      endDate: "",
+      startDate: new Date(),
+      endDate: new Date(),
       location: "",
       capacity: "",
       image: "",
@@ -68,8 +69,8 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
       form.reset({
         title: event.title || "",
         description: event.description || "",
-        startDate: event.startDate ? new Date(event.startDate).toISOString().slice(0, 16) : "",
-        endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : "",
+        startDate: event.startDate ? new Date(event.startDate) : new Date(),
+        endDate: event.endDate ? new Date(event.endDate) : new Date(),
         location: event.location || "",
         capacity: event.capacity?.toString() || "",
         image: event.image || "",
@@ -80,8 +81,8 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
       form.reset({
         title: "",
         description: "",
-        startDate: "",
-        endDate: "",
+        startDate: new Date(),
+        endDate: new Date(),
         location: "",
         capacity: "",
         image: "",
@@ -100,6 +101,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
       }
       const result = await upsertEvent(eventData)
 
+      console.log(result)
       toast({
         title: result.message,
         description: result.description,
@@ -172,11 +174,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
                     Start Date <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      type="datetime-local"
-                      {...field}
-                      className={cn(form.formState.errors.startDate && "border-red-500 focus-visible:ring-red-500")}
-                    />
+                    <DateTimePicker24h value={field.value} onChange={(date) => field.onChange(date)} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -191,11 +189,7 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
                     End Date <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      type="datetime-local"
-                      {...field}
-                      className={cn(form.formState.errors.endDate && "border-red-500 focus-visible:ring-red-500")}
-                    />
+                    <DateTimePicker24h value={field.value} onChange={(date) => field.onChange(date)} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

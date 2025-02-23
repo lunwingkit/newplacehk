@@ -1,17 +1,30 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable, type PaginationState } from "@tanstack/react-table"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Pencil, Trash2, Loader2 } from "lucide-react"
+import { Pencil, Trash2, Loader2, RefreshCw } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface GenericTableProps<TData> {
   columns: ColumnDef<TData, any>[]
-  type: "users" | "events" | "news"
+  type: string
   onEdit: (item: TData) => void
   onAdd: () => void
   idAccessor: (item: TData) => string
@@ -21,6 +34,10 @@ interface GenericTableProps<TData> {
     totalCount: number
   }>
   deleteFunction: (id: string) => Promise<void>
+  renderCustomActions?: (item: TData) => React.ReactNode
+  disableAdd?: boolean
+  disableEdit?: boolean
+  disableDelete?: boolean
 }
 
 export function GenericTable<TData>({
@@ -31,6 +48,10 @@ export function GenericTable<TData>({
   idAccessor,
   fetchFunction,
   deleteFunction,
+  renderCustomActions,
+  disableAdd = false,
+  disableEdit = false,
+  disableDelete = false,
 }: GenericTableProps<TData>) {
   const { toast } = useToast()
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
@@ -38,21 +59,22 @@ export function GenericTable<TData>({
     pageSize: 10,
   })
   const [paginationInfo, setPaginationInfo] = useState("")
+  const [itemToDelete, setItemToDelete] = useState<TData | null>(null)
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isRefetching, error, refetch } = useQuery({
     queryKey: [type, pageIndex, pageSize],
     queryFn: () => fetchFunction({ page: pageIndex + 1, pageSize }),
+    staleTime: 0,
   })
 
   useEffect(() => {
-    if (isLoading) {
+    if (isLoading || isRefetching) {
       setPaginationInfo("")
     } else if (data) {
       const { items, totalCount } = data
       if (totalCount === 0) {
         setPaginationInfo("No entries to show")
       } else {
-        console.log(items);
         const startIndex = pageIndex * pageSize + 1
         const endIndex = startIndex + items.length - 1
         setPaginationInfo(`Showing ${startIndex} to ${endIndex} of ${totalCount} entries`)
@@ -60,11 +82,12 @@ export function GenericTable<TData>({
     } else {
       setPaginationInfo("No entries to show")
     }
-  }, [data, isLoading, pageIndex, pageSize])
+  }, [data, isLoading, isRefetching, pageIndex, pageSize])
 
-  const handleDelete = async (item: TData) => {
+  const handleDelete = async () => {
+    if (!itemToDelete) return
     try {
-      await deleteFunction(idAccessor(item))
+      await deleteFunction(idAccessor(itemToDelete))
       toast({
         title: "Item deleted",
         description: "The item has been successfully deleted.",
@@ -77,6 +100,7 @@ export function GenericTable<TData>({
         variant: "destructive",
       })
     }
+    setItemToDelete(null)
   }
 
   const table = useReactTable({
@@ -168,7 +192,17 @@ export function GenericTable<TData>({
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <Button onClick={onAdd}>Add New</Button>
+        <div className="flex space-x-2">
+          {!disableAdd && <Button onClick={onAdd}>Add New</Button>}
+          <Button onClick={() => refetch()} variant="outline" disabled={isLoading || isRefetching}>
+            {isLoading || isRefetching ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Refresh
+          </Button>
+        </div>
         <Select value={pageSize.toString()} onValueChange={(value) => table.setPageSize(Number(value))}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select page size" />
@@ -197,7 +231,7 @@ export function GenericTable<TData>({
             ))}
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoading || isRefetching ? (
               <TableRow>
                 <TableCell colSpan={columns.length + 1} className="h-24 text-center">
                   <div className="flex items-center justify-center">
@@ -219,12 +253,36 @@ export function GenericTable<TData>({
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.original)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      {!disableEdit && (
+                        <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {!disableDelete && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => setItemToDelete(row.original)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the selected item from our
+                                servers.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                      {renderCustomActions && renderCustomActions(row.original)}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

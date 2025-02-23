@@ -86,7 +86,7 @@ export default function Home() {
         <section className="py-16 bg-gradient-to-b from-primary/10 to-background">
           <div className="container mx-auto px-4">
             <h2 className="text-4xl font-bold mb-8 text-center">Featured Events</h2>
-            <div className="relative px-12">
+            <div className="relative">
               {" "}
               {/* Added padding for button space */}
               <Carousel

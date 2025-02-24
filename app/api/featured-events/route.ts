@@ -4,7 +4,6 @@ import { EventStatus } from "@prisma/client"
 
 export async function GET() {
   try {
-    console.log('help me debug')
     const featuredEvents = await prisma.event.findMany({
       where: {
         OR: [{ status: EventStatus.UPCOMING }, { status: EventStatus.PREPARING }],
@@ -22,8 +21,6 @@ export async function GET() {
         description: true,
       },
     })
-
-    console.log(featuredEvents);
     return NextResponse.json(featuredEvents)
   } catch (error) {
     console.error("Error fetching featured events:", error)

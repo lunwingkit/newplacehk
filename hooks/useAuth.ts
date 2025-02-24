@@ -1,5 +1,5 @@
 "use client";
-export const runtime = "nodejs";
+
 import { useSession } from "next-auth/react";
 import { signIn, signOut } from "@/auth";
 import { useRouter } from "next/navigation";

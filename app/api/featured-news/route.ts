@@ -3,7 +3,6 @@ import prisma from "@/lib/prisma"
 
 export async function GET() {
   try {
-    console.log('help me debug')
     const newsItems = await prisma.news.findMany({
       where: {
         isPublished: true,

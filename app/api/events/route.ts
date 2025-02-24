@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function possibilities(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     console.log('bedugdebug. events POST');
     const searchParams = request.nextUrl.searchParams;

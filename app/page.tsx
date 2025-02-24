@@ -1,75 +1,153 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Navbar } from "@/components/navbar"
+import { Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Event, News } from "@prisma/client"
 
-// Dummy data for featured events and news
-const featuredEvents = [
-  {
-    id: 1,
-    title: "Summer Music Festival",
-    image: "/placeholder.svg?height=600&width=1200",
-    date: "2025-07-15",
-    location: "Sunset Park",
-    description: "Experience three days of non-stop music from top artists across various genres.",
-  },
-  {
-    id: 2,
-    title: "Tech Innovation Summit",
-    image: "/placeholder.svg?height=600&width=1200",
-    date: "2025-09-22",
-    location: "Downtown Convention Center",
-    description: "Join industry leaders and innovators to explore the future of technology.",
-  },
-  {
-    id: 3,
-    title: "Food and Wine Expo",
-    image: "/placeholder.svg?height=600&width=1200",
-    date: "2025-08-05",
-    location: "Riverfront Plaza",
-    description: "Indulge in culinary delights and fine wines from around the world.",
-  },
-  {
-    id: 4,
-    title: "Art in the Park",
-    image: "/placeholder.svg?height=600&width=1200",
-    date: "2025-08-20",
-    location: "City Botanical Gardens",
-    description: "A celebration of local artists showcasing their work in a beautiful outdoor setting.",
-  },
-]
+async function getFeaturedEvents() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/featured-events`, {
+    cache: "no-store",
+  })
+  if (!res.ok) {
+    throw new Error("Failed to fetch featured events")
+  }
+  return res.json()
+}
 
-const newsItems = [
-  {
-    id: 1,
-    title: "New Venue Announced for Upcoming Concert Series",
-    date: "2025-05-01",
-    thumbnail: "/placeholder.svg?height=100&width=100",
-    slug: "new-venue-announced",
-  },
-  {
-    id: 2,
-    title: "Local Artist to Headline Community Festival",
-    date: "2025-05-15",
-    thumbnail: "/placeholder.svg?height=100&width=100",
-    slug: "local-artist-headlines",
-  },
-  {
-    id: 3,
-    title: "Event Industry Sees Record Growth in Q2",
-    date: "2025-06-01",
-    thumbnail: "/placeholder.svg?height=100&width=100",
-    slug: "event-industry-growth",
-  },
-]
+async function getNewsItems() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news`, {
+    cache: "no-store",
+  })
+  if (!res.ok) {
+    throw new Error("Failed to fetch news items")
+  }
+  return res.json()
+}
 
-export default function Home() {
+// Replace the existing FeaturedEventsSkeleton function with this updated version
+function FeaturedEventsSkeleton() {
+  return (
+    <div className="relative px-12">
+      <div className="flex space-x-4 overflow-hidden">
+        {[1, 2].map((i) => (
+          <div key={i} className="flex-none w-full md:w-1/2 pr-4">
+            <div className="relative aspect-video overflow-hidden rounded-xl shadow-lg">
+              <Skeleton className="absolute inset-0" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4 md:p-6">
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2 mb-2" />
+                <Skeleton className="h-4 w-full mb-4" />
+                <Skeleton className="h-8 w-32" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Skeleton className="absolute left-0 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full" />
+      <Skeleton className="absolute right-0 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full" />
+    </div>
+  )
+}
+
+function NewsSkeleton() {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3].map((i) => (
+        <Card key={i}>
+          <CardContent className="flex items-center space-x-4 p-4">
+            <Skeleton className="h-[100px] w-[100px] rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[200px]" />
+              <Skeleton className="h-4 w-[150px]" />
+              <Skeleton className="h-4 w-[100px]" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+function FeaturedEvents({ events }: { events: Event[] }) {
+  return (
+    <div className="relative px-12">
+      <Carousel opts={{ loop: true, align: "start" }} className="w-full">
+        <CarouselContent className="-ml-4">
+          {events.map((event: Event) => (
+            <CarouselItem key={event.id} className="pl-4 md:basis-1/2 lg:basis-1/2">
+              <div className="relative aspect-video overflow-hidden rounded-xl shadow-lg">
+                <Image
+                  src={event.image || "/placeholder.svg?height=600&width=1200"}
+                  alt={event.title}
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
+                  <h3 className="text-xl md:text-2xl font-bold mb-1 md:mb-2">{event.title}</h3>
+                  <p className="mb-1 md:mb-2 text-sm md:text-base opacity-90">
+                    {new Date(event.startDate).toLocaleDateString()} | {event.location}
+                  </p>
+                  <p className="mb-2 md:mb-4 text-xs md:text-sm line-clamp-2 opacity-80">{event.description}</p>
+                  <Button asChild variant="secondary" size="sm" className="w-full sm:w-auto">
+                    <Link href={`/event/${event.id}`}>Learn More</Link>
+                  </Button>
+                </div>
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <div className="hidden md:block">
+          <CarouselPrevious className="absolute -left-12 top-1/2 -translate-y-1/2" />
+          <CarouselNext className="absolute -right-12 top-1/2 -translate-y-1/2" />
+        </div>
+      </Carousel>
+    </div>
+  )
+}
+
+function NewsItems({ items }: { items: News[] }) {
+  return (
+    <div className="space-y-6">
+      {items.map((item: News) => (
+        <Card key={item.id}>
+          <CardContent className="flex items-center space-x-4 p-4">
+            <Image
+              src={item.image || "/placeholder.svg?height=100&width=100"}
+              alt={item.title}
+              width={100}
+              height={100}
+              className="rounded-lg"
+            />
+            <div className="flex-grow">
+              <Link href={`/news/${item.slug}`} className="text-xl font-semibold hover:underline">
+                {item.title}
+              </Link>
+              <p className="text-muted-foreground text-sm mb-2">{new Date(item.publishedAt).toLocaleDateString()}</p>
+              {item.summary && <p className="text-sm text-muted-foreground line-clamp-2">{item.summary}</p>}
+              {item.tags && item.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {item.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+export default async function Home() {
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
-
       <main className="flex-grow">
         {/* Hero Section */}
         <section className="bg-primary text-primary-foreground py-20">
@@ -86,46 +164,9 @@ export default function Home() {
         <section className="py-16 bg-gradient-to-b from-primary/10 to-background">
           <div className="container mx-auto px-4">
             <h2 className="text-4xl font-bold mb-8 text-center">Featured Events</h2>
-            <div className="relative">
-              {" "}
-              {/* Added padding for button space */}
-              <Carousel
-                opts={{
-                  loop: true,
-                  align: "start",
-                }}
-                className="w-full"
-              >
-                <CarouselContent className="-ml-4">
-                  {featuredEvents.map((event) => (
-                    <CarouselItem key={event.id} className="pl-4 md:basis-1/2 lg:basis-1/2">
-                      <div className="relative aspect-video overflow-hidden rounded-xl shadow-lg">
-                        <Image
-                          src={event.image || "/placeholder.svg"}
-                          alt={event.title}
-                          fill
-                          className="object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4 md:p-6 text-white">
-                          <h3 className="text-xl md:text-2xl font-bold mb-1 md:mb-2">{event.title}</h3>
-                          <p className="mb-1 md:mb-2 text-sm md:text-base opacity-90">
-                            {event.date} | {event.location}
-                          </p>
-                          <p className="mb-2 md:mb-4 text-xs md:text-sm line-clamp-2 opacity-80">{event.description}</p>
-                          <Button asChild variant="secondary" size="sm" className="w-full sm:w-auto">
-                            <Link href={`/events/${event.id}`}>Learn More</Link>
-                          </Button>
-                        </div>
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <div className="hidden md:block">
-                  <CarouselPrevious className="absolute -left-12 top-1/2 -translate-y-1/2" children={undefined} />
-                  <CarouselNext className="absolute -right-12 top-1/2 -translate-y-1/2" children={undefined} />
-                </div>
-              </Carousel>
-            </div>
+            <Suspense fallback={<FeaturedEventsSkeleton />}>
+              <FeaturedEventsContent />
+            </Suspense>
           </div>
         </section>
 
@@ -189,27 +230,9 @@ export default function Home() {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold mb-8 text-center">Latest News</h2>
-            <div className="space-y-6">
-              {newsItems.map((item) => (
-                <Card key={item.id}>
-                  <CardContent className="flex items-center space-x-4 p-4">
-                    <Image
-                      src={item.thumbnail || "/placeholder.svg"}
-                      alt={item.title}
-                      width={100}
-                      height={100}
-                      className="rounded-lg"
-                    />
-                    <div>
-                      <Link href={`/news/${item.slug}`} className="text-xl font-semibold hover:underline">
-                        {item.title}
-                      </Link>
-                      <p className="text-muted-foreground">{new Date(item.date).toLocaleDateString()}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <Suspense fallback={<NewsSkeleton />}>
+              <NewsContent />
+            </Suspense>
           </div>
         </section>
       </main>
@@ -220,6 +243,24 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  )
+}
+
+async function FeaturedEventsContent() {
+  const featuredEvents = await getFeaturedEvents()
+  return featuredEvents.length > 0 ? (
+    <FeaturedEvents events={featuredEvents} />
+  ) : (
+    <p className="text-center">No featured events available at the moment.</p>
+  )
+}
+
+async function NewsContent() {
+  const newsItems = await getNewsItems()
+  return newsItems.length > 0 ? (
+    <NewsItems items={newsItems} />
+  ) : (
+    <p className="text-center">No news items available at the moment.</p>
   )
 }
 

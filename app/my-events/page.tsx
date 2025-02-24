@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Navbar } from "@/components/navbar"
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -76,7 +75,6 @@ export default function MyEventsPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">My Events</h1>
         <Tabs defaultValue="signed-up" className="w-full">

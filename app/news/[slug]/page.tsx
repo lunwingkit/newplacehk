@@ -1,4 +1,3 @@
-import { Navbar } from "@/components/navbar"
 import { notFound } from "next/navigation"
 
 // Dummy data for news articles
@@ -38,8 +37,6 @@ export default function NewsDetail({ params }: { params: { slug: string } }) {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
-
       <main className="flex-grow container mx-auto px-4 py-8">
         <article className="max-w-2xl mx-auto">
           <h1 className="text-3xl font-bold mb-4">{article.title}</h1>

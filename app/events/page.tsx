@@ -1,23 +1,10 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Image from "next/image";
-import { Navbar } from "@/components/navbar";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { useState } from "react"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import {
   Dialog,
   DialogContent,
@@ -26,263 +13,214 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { MapPin, Star, DollarSign, Loader2, Clock } from "lucide-react";
-import { toast, Toaster } from "react-hot-toast";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
+} from "@/components/ui/dialog"
+import { MapPin, Users, Loader2, Clock, Tag, AlertCircle } from "lucide-react"
+import { toast, Toaster } from "react-hot-toast"
+import dayjs from "dayjs"
+import utc from "dayjs/plugin/utc"
+import timezone from "dayjs/plugin/timezone"
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import type { Event } from "@prisma/client"
+import { EventStatus } from "@prisma/client"
 
 // Extend dayjs with plugins
-dayjs.extend(utc);
-dayjs.extend(timezone);
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 // Set the default timezone to Hong Kong
-dayjs.tz.setDefault("Asia/Hong_Kong");
+dayjs.tz.setDefault("Asia/Hong_Kong")
 
-// Dummy data for events
-const events = [
-  {
-    id: 1,
-    title: "Summer Concert Series",
-    date: "2025-06-15",
-    description: "Enjoy live music under the stars",
-    location: "Central Park",
-    image: "/placeholder.svg?height=400&width=600",
-    details:
-      "Join us for a night of incredible live music featuring local and international artists. Bring your blankets and picnic baskets for a magical evening under the stars.",
-    price: 25,
-    startTime: "2025-06-15T18:00:00Z",
-    endTime: "2025-06-15T23:00:00Z",
-  },
-  {
-    id: 2,
-    title: "Tech Conference 2025",
-    date: "2025-07-10",
-    description: "Learn about the latest in technology",
-    location: "Convention Center",
-    image: "/placeholder.svg?height=400&width=600",
-    details:
-      "Explore cutting-edge technologies, attend workshops, and network with industry leaders at our annual tech conference.",
-    price: 199,
-    startTime: "2025-07-10T09:00:00Z",
-    endTime: "2025-07-11T17:00:00Z",
-  },
-  {
-    id: 3,
-    title: "Food Festival",
-    date: "2025-07-25",
-    description: "Taste cuisines from around the world",
-    location: "Downtown Square",
-    image: "/placeholder.svg?height=400&width=600",
-    details:
-      "Embark on a culinary journey around the world with over 50 food stalls representing cuisines from every continent.",
-    price: 15,
-    startTime: "2025-07-25T11:00:00Z",
-    endTime: "2025-07-25T22:00:00Z",
-  },
-  {
-    id: 4,
-    title: "Art Exhibition Opening",
-    date: "2025-08-05",
-    description: "Featuring works from local artists",
-    location: "City Gallery",
-    image: "/placeholder.svg?height=400&width=600",
-    details:
-      "Be among the first to see stunning new works from our city's most talented artists. Opening night includes a meet-and-greet with the artists.",
-    price: 10,
-    startTime: "2025-08-05T19:00:00Z",
-    endTime: "2025-08-05T22:00:00Z",
-  },
-  {
-    id: 5,
-    title: "Marathon",
-    date: "2025-09-12",
-    description: "Annual city marathon",
-    location: "City Streets",
-    image: "/placeholder.svg?height=400&width=600",
-    details:
-      "Challenge yourself in our annual marathon. The route takes you through the most scenic parts of our beautiful city.",
-    price: 50,
-    startTime: "2025-09-12T06:00:00Z",
-    endTime: "2025-09-12T14:00:00Z",
-  },
-  {
-    id: 6,
-    title: "Book Fair",
-    date: "2025-09-20",
-    description: "Meet authors and find your next read",
-    location: "Public Library",
-    image: "/placeholder.svg?height=400&width=600",
-    details:
-      "Discover new books, attend author readings, and participate in literary workshops at our annual book fair.",
-    price: 5,
-    startTime: "2025-09-20T10:00:00Z",
-    endTime: "2025-09-20T18:00:00Z",
-  },
-];
+// API functions
+const fetchEvents = async ({ pageParam = 1 }) => {
+  const response = await fetch(`/api/events?page=${pageParam}&limit=10`)
+  if (!response.ok) {
+    throw new Error("Network response was not ok")
+  }
+  return response.json()
+}
 
-const groupEventsByMonth = (events: any[]) => {
-  return events.reduce((acc: Record<string, any[]>, event: any) => {
-    const month = dayjs(event.date).format("MMMM");
-    if (!acc[month]) {
-      acc[month] = [];
+const signUpForEvent = async (eventId: string) => {
+  const response = await fetch(`/api/events/${eventId}/signup`, { method: "POST" })
+  if (!response.ok) {
+    throw new Error("Failed to sign up for event")
+  }
+  return response.json()
+}
+
+const fetchUserEvents = async () => {
+  const response = await fetch("/api/user/events")
+  if (!response.ok) {
+    throw new Error("Failed to fetch user events")
+  }
+  return response.json()
+}
+
+// Helper functions
+const groupEventsByMonth = (events: Event[] | undefined) => {
+  if (!events || events.length === 0) {
+    return {}
+  }
+
+  return events.reduce((acc: Record<string, Event[]>, event) => {
+    if (!event) {
+      return acc
     }
-    acc[month].push(event);
-    return acc;
-  }, {});
-};
 
-// Format event time
-const formatEventTime = (startTime: string, endTime: string) => {
-  const start = dayjs(startTime).tz();
-  const end = dayjs(endTime).tz();
+    const month = event.startDate ? dayjs(event.startDate).format("MMMM YYYY") : "Unknown Date"
+
+    if (!acc[month]) {
+      acc[month] = []
+    }
+    acc[month].push(event)
+    return acc
+  }, {})
+}
+
+const formatEventTime = (startDate: string | Date | null, endDate: string | Date | null) => {
+  if (!startDate || !endDate) {
+    return "Date and time not specified"
+  }
+
+  const start = dayjs(startDate).tz()
+  const end = dayjs(endDate).tz()
+
+  if (!start.isValid() || !end.isValid()) {
+    return "Invalid date"
+  }
 
   if (start.isSame(end, "day")) {
-    return `${start.format("YYYY/MM/DD HH:mm")} ~ ${end.format("HH:mm")}`;
+    return `${start.format("YYYY/MM/DD HH:mm")} ~ ${end.format("HH:mm")}`
   } else {
-    return `${start.format("YYYY/MM/DD HH:mm")} ~ ${end.format(
-      "YYYY/MM/DD HH:mm"
-    )}`;
+    return `${start.format("YYYY/MM/DD HH:mm")} ~ ${end.format("YYYY/MM/DD HH:mm")}`
   }
-};
-
-// Simulated API calls
-const starEvent = async (eventId: number): Promise<void> => {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  if (Math.random() < 0.9) {
-    return Promise.resolve();
-  } else {
-    return Promise.reject(new Error("Failed to star event"));
-  }
-};
-
-const signUpForEvent = async (eventId: number): Promise<void> => {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-  if (Math.random() < 0.8) {
-    return Promise.resolve();
-  } else {
-    return Promise.reject(new Error("Failed to sign up for event"));
-  }
-};
+}
 
 export default function EventsPage() {
-  const [starredEvents, setStarredEvents] = useState<number[]>([]);
-  const [signedUpEvents, setSignedUpEvents] = useState<number[]>([]);
-  const [loadingStars, setLoadingStars] = useState<number[]>([]);
-  const [loadingSignUps, setLoadingSignUps] = useState<number[]>([]);
-  const eventsByMonth = groupEventsByMonth(events);
-  const months = Object.keys(eventsByMonth);
-  const [openAccordions, setOpenAccordions] = useState<string[]>([months[0]]);
+  const [openAccordions, setOpenAccordions] = useState<string[]>([])
+  const queryClient = useQueryClient()
 
-  const toggleStar = async (eventId: number) => {
-    if (loadingStars.includes(eventId)) return;
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, isLoading, isRefetching } = useInfiniteQuery({
+    queryKey: ["events"],
+    queryFn: fetchEvents,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      return lastPage.currentPage < lastPage.totalPages ? lastPage.currentPage + 1 : undefined
+    },
+  })
 
-    setLoadingStars((prev) => [...prev, eventId]);
+  const { data: userEvents } = useQuery({
+    queryKey: ["userEvents"],
+    queryFn: fetchUserEvents,
+  })
+
+  const signUpMutation = useMutation({
+    mutationFn: signUpForEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userEvents"] })
+    },
+  })
+
+  const handleSignUp = async (eventId: string) => {
     try {
-      await starEvent(eventId);
-      setStarredEvents((prev) =>
-        prev.includes(eventId)
-          ? prev.filter((id) => id !== eventId)
-          : [...prev, eventId]
-      );
-      toast.success(
-        starredEvents.includes(eventId) ? "Event unstarred" : "Event starred"
-      );
+      await signUpMutation.mutateAsync(eventId)
+      toast.success("Successfully signed up for event")
     } catch (error) {
-      toast.error("Failed to star event");
-    } finally {
-      setLoadingStars((prev) => prev.filter((id) => id !== eventId));
+      toast.error("Failed to sign up for event")
     }
-  };
-
-  const handleSignUp = async (eventId: number) => {
-    if (loadingSignUps.includes(eventId)) return;
-
-    setLoadingSignUps((prev) => [...prev, eventId]);
-    try {
-      await signUpForEvent(eventId);
-      setSignedUpEvents((prev) => [...prev, eventId]);
-      toast.success("Successfully signed up for event");
-    } catch (error) {
-      toast.error("Failed to sign up for event");
-    } finally {
-      setLoadingSignUps((prev) => prev.filter((id) => id !== eventId));
-    }
-  };
+  }
 
   const toggleAccordion = (month: string) => {
-    setOpenAccordions((prev) =>
-      prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]
-    );
-  };
+    setOpenAccordions((prev) => (prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]))
+  }
+
+  if (isLoading || isRefetching) {
+    return (
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading events...</span>
+        </div>
+      </main>
+    )
+  }
+
+  if (status === "error") {
+    return (
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <AlertCircle className="h-8 w-8 text-red-500" />
+          <span className="ml-2 text-red-500">Error fetching events</span>
+        </div>
+      </main>
+    )
+  }
+
+  const allEvents = data?.pages.flatMap((page) => page.items) || []
+  const eventsByMonth = groupEventsByMonth(allEvents)
+  const months = Object.keys(eventsByMonth)
+
+  if (months.length === 0) {
+    return (
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Upcoming Events</h1>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
+            <h2 className="mt-2 text-lg font-medium text-gray-900">No events found</h2>
+            <p className="mt-1 text-sm text-gray-500">There are currently no upcoming events.</p>
+          </div>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
-
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Upcoming Events</h1>
 
-        <Accordion
-          type="multiple"
-          value={openAccordions}
-          onValueChange={setOpenAccordions}
-        >
+        <Accordion type="multiple" value={openAccordions} onValueChange={setOpenAccordions}>
           {months.map((month) => (
             <AccordionItem key={month} value={month}>
-              <AccordionTrigger onClick={() => toggleAccordion(month)}>
-                {month}
-              </AccordionTrigger>
+              <AccordionTrigger onClick={() => toggleAccordion(month)}>{month}</AccordionTrigger>
               <AccordionContent>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {eventsByMonth[month].map((event: any) => (
+                  {eventsByMonth[month].map((event: Event) => (
                     <Card key={event.id} className="relative flex flex-col">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 z-10"
-                        onClick={() => toggleStar(event.id)}
-                        disabled={loadingStars.includes(event.id)}
-                      >
-                        {loadingStars.includes(event.id) ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Star
-                            className={`w-6 h-6 ${
-                              starredEvents.includes(event.id)
-                                ? "fill-yellow-400"
-                                : "fill-transparent"
-                            }`}
-                          />
-                        )}
-                      </Button>
-                      <Image
-                        src={event.image || "/placeholder.svg"}
-                        alt={event.title}
-                        width={600}
-                        height={400}
-                        className="w-full h-48 object-cover"
-                      />
+                      {event.image && (
+                        <Image
+                          src={event.image || "/placeholder.svg"}
+                          alt={event.title}
+                          width={600}
+                          height={400}
+                          className="w-full h-48 object-cover"
+                        />
+                      )}
                       <CardHeader>
                         <CardTitle>{event.title}</CardTitle>
                         <CardDescription>
                           <div className="flex items-center mt-1">
                             <Clock className="w-4 h-4 mr-1" />
-                            {formatEventTime(event.startTime, event.endTime)}
+                            {formatEventTime(event.startDate, event.endDate)}
                           </div>
                           <div className="flex items-center mt-1">
                             <MapPin className="w-4 h-4 mr-1" />
-                            {event.location}
+                            {event.location || "Location not specified"}
                           </div>
                           <div className="flex items-center mt-1">
-                            <DollarSign className="w-4 h-4 mr-1" />$
-                            {event.price}
+                            <Users className="w-4 h-4 mr-1" />
+                            Capacity: {event.capacity || "Not specified"}
                           </div>
+                          {event.category && (
+                            <div className="flex items-center mt-1">
+                              <Tag className="w-4 h-4 mr-1" />
+                              {event.category}
+                            </div>
+                          )}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <p>{event.description}</p>
+                        <p>{event.description || "No description available"}</p>
                       </CardContent>
                       <CardFooter className="mt-auto">
                         <div className="flex justify-between w-full">
@@ -294,15 +232,12 @@ export default function EventsPage() {
                               <DialogHeader>
                                 <DialogTitle>{event.title}</DialogTitle>
                                 <DialogDescription>
-                                  {formatEventTime(
-                                    event.startTime,
-                                    event.endTime
-                                  )}{" "}
-                                  | {event.location}
+                                  {formatEventTime(event.startDate, event.endDate)} |{" "}
+                                  {event.location || "Location not specified"}
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="mt-4">
-                                <div className="relative">
+                                {event.image && (
                                   <Image
                                     src={event.image || "/placeholder.svg"}
                                     alt={event.title}
@@ -310,48 +245,31 @@ export default function EventsPage() {
                                     height={400}
                                     className="w-full h-48 object-cover rounded-md mb-2"
                                   />
-                                  <div className="flex justify-end mt-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => toggleStar(event.id)}
-                                      disabled={loadingStars.includes(event.id)}
-                                    >
-                                      {loadingStars.includes(event.id) ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Star
-                                          className={`w-6 h-6 ${
-                                            starredEvents.includes(event.id)
-                                              ? "fill-yellow-400"
-                                              : "fill-transparent"
-                                          }`}
-                                        />
-                                      )}
-                                    </Button>
-                                  </div>
-                                </div>
-                                <p className="mt-4">{event.details}</p>
-                                <p className="mt-2 font-semibold">
-                                  Price: ${event.price}
-                                </p>
+                                )}
+                                <p className="mt-4">{event.description || "No description available"}</p>
+                                <p className="mt-2 font-semibold">Capacity: {event.capacity || "Not specified"}</p>
+                                <p className="mt-2">Status: {event.status || "Status not specified"}</p>
+                                {event.category && <p className="mt-2">Category: {event.category}</p>}
                               </div>
                               <DialogFooter className="mt-4">
                                 <Button
                                   className="w-full"
                                   onClick={() => handleSignUp(event.id)}
                                   disabled={
-                                    signedUpEvents.includes(event.id) ||
-                                    loadingSignUps.includes(event.id)
+                                    userEvents?.signedUpEvents.includes(event.id) ||
+                                    signUpMutation.isPending ||
+                                    event.status !== EventStatus.UPCOMING
                                   }
                                 >
-                                  {loadingSignUps.includes(event.id) ? (
+                                  {signUpMutation.isPending ? (
                                     <>
                                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                       Signing Up...
                                     </>
-                                  ) : signedUpEvents.includes(event.id) ? (
+                                  ) : userEvents?.signedUpEvents.includes(event.id) ? (
                                     "Signed Up"
+                                  ) : event.status !== EventStatus.UPCOMING ? (
+                                    "Not Available"
                                   ) : (
                                     "Sign Up"
                                   )}
@@ -362,17 +280,20 @@ export default function EventsPage() {
                           <Button
                             onClick={() => handleSignUp(event.id)}
                             disabled={
-                              signedUpEvents.includes(event.id) ||
-                              loadingSignUps.includes(event.id)
+                              userEvents?.signedUpEvents.includes(event.id) ||
+                              signUpMutation.isPending ||
+                              event.status !== EventStatus.UPCOMING
                             }
                           >
-                            {loadingSignUps.includes(event.id) ? (
+                            {signUpMutation.isPending ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Signing Up...
                               </>
-                            ) : signedUpEvents.includes(event.id) ? (
+                            ) : userEvents?.signedUpEvents.includes(event.id) ? (
                               "Signed Up"
+                            ) : event.status !== EventStatus.UPCOMING ? (
+                              "Not Available"
                             ) : (
                               "Sign Up"
                             )}
@@ -386,6 +307,21 @@ export default function EventsPage() {
             </AccordionItem>
           ))}
         </Accordion>
+
+        {hasNextPage && (
+          <div className="mt-8 text-center">
+            <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+              {isFetchingNextPage ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading more...
+                </>
+              ) : (
+                "Load More"
+              )}
+            </Button>
+          </div>
+        )}
       </main>
 
       <footer className="bg-primary text-primary-foreground py-6">
@@ -393,6 +329,8 @@ export default function EventsPage() {
           <p>&copy; 2025 Event Showcase. All rights reserved.</p>
         </div>
       </footer>
+      <Toaster position="bottom-right" />
     </div>
-  );
+  )
 }
+

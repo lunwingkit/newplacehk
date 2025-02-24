@@ -9,6 +9,13 @@ const nextConfig = {
     },
     images: {
         domains: ['miquan-play.oss-cn-shenzhen.aliyuncs.com'], // Add the external domain here
+        remotePatterns: [
+            {
+              protocol: "https",
+              hostname: "lh3.googleusercontent.com",
+              pathname: "/a/**",
+            },
+          ],
     },
 };
 

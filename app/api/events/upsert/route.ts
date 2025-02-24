@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    console.log("hello");
+    console.log("hello event upsert");
     const eventData = await request.json();
     console.log(eventData);
 

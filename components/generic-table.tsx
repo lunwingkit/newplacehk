@@ -25,8 +25,8 @@ import {
 interface GenericTableProps<TData> {
   columns: ColumnDef<TData, any>[]
   type: string
-  onEdit: (item: TData) => void
-  onAdd: () => void
+  onEdit: (item: TData, onSuccess?: () => void) => void; // Add onSuccess callback
+  onAdd: (onSuccess?: () => void) => void; // Add onSuccess callback
   idAccessor: (item: TData) => string
   fetchFunction: (params: { page: number; pageSize: number }) => Promise<{
     items: TData[]
@@ -66,6 +66,11 @@ export function GenericTable<TData>({
     queryFn: () => fetchFunction({ page: pageIndex + 1, pageSize }),
     staleTime: 0,
   })
+
+   // Define the onSuccess callback
+   const handleSuccess = () => {
+    refetch(); // Refresh the table
+  };
 
   useEffect(() => {
     if (isLoading || isRefetching) {
@@ -193,7 +198,9 @@ export function GenericTable<TData>({
     <div>
       <div className="flex justify-between items-center mb-4">
         <div className="flex space-x-2">
-          {!disableAdd && <Button onClick={onAdd}>Add New</Button>}
+          {!disableAdd && (
+            <Button onClick={() => onAdd(handleSuccess)}>Add New</Button> // Pass handleSuccess to onAdd
+          )}
           <Button onClick={() => refetch()} variant="outline" disabled={isLoading || isRefetching}>
             {isLoading || isRefetching ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -255,7 +262,7 @@ export function GenericTable<TData>({
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       {!disableEdit && (
-                        <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+                        <Button variant="ghost" size="sm" onClick={() => onEdit(row.original, handleSuccess)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                       )}

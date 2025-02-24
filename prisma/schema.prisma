@@ -16,19 +16,20 @@ model User {
   age            Int?
   gender         String?
   interests      String[]
-  introduction   String? // Removed @db.Text
+  introduction   String?
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
   // Relations
   signedUpEvents EventsSignedUpByUsers[]
+  starredEvents  StarredEvents[]
   hostedEvents   EventsHostedByUsers[]
 }
 
 model News {
   id          String   @id @default(cuid())
   title       String
-  content     String // Removed @db.Text
-  summary     String? // Removed @db.Text
+  content     String
+  summary     String?
   image       String?
   slug        String   @unique
   author      String?
@@ -55,6 +56,7 @@ model Event {
   priceSchemes  PriceScheme[]
   signedUpUsers EventsSignedUpByUsers[]
   hostedByUsers EventsHostedByUsers[]
+  starredByUsers StarredEvents[]
 }
 
 model PriceScheme {
@@ -93,6 +95,19 @@ model EventsHostedByUsers {
   joinedAt DateTime @default(now())
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+}
+
+model StarredEvents {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  starredAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@index([userId])

@@ -3,7 +3,6 @@
 import { Badge } from "@/components/ui/badge"
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,32 +13,51 @@ import { TagManager } from "@/components/tag-manager"
 import { toast, Toaster } from "react-hot-toast"
 import { Loader2 } from "lucide-react"
 import { getSession } from "next-auth/react"
+import { PREDEFINED_INTERESTS } from "@/lib/constant"
+import { Skeleton } from "@/components/ui/skeleton"
 
-const PREDEFINED_INTERESTS = ["Reading", "Traveling", "Cooking", "Sports", "Music", "Movies", "Art", "Photography", "Dancing", "Hiking"]
-const PREDEFINED_SELF_INTRO = ["Friendly", "Outgoing", "Creative", "Ambitious", "Adventurous", "Intellectual", "Romantic", "Practical"]
-const PREDEFINED_EXPECTATIONS = ["Kind", "Supportive", "Honest", "Ambitious", "Family-oriented", "Adventurous", "Intellectual", "Romantic"]
+interface User {
+  id: string
+  name: string
+  email: string
+  age: number | null
+  gender: string | null
+  interests: string[]
+  introduction: string | null
+  image: string | null
+}
 
 export default function PersonalInfoPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
-      const session = await getSession()
-      if (!session?.user?.email) return
-
       try {
-        const res = await fetch(`/api/user?email=${session.user.email}`)
-        if (res.ok) {
-          const data = await res.json()
-          setUser(data)
-        } else {
-          toast.error("Failed to load user data")
+        const session = await getSession()
+        if (!session?.user?.email) {
+          setError("Please sign in to view your profile")
+          setIsLoading(false)
+          return
         }
+
+        const res = await fetch(`/api/user?email=${session.user.email}`)
+        if (!res.ok) {
+          throw new Error(await res.text())
+        }
+
+        const data = await res.json()
+        setUser(data)
       } catch (error) {
-        toast.error("Error fetching user data")
+        console.error("Error fetching user:", error)
+        setError("Failed to load user data")
+        toast.error("Error loading profile")
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -47,9 +65,26 @@ export default function PersonalInfoPage() {
   }, [])
 
   const handleEdit = () => setIsEditing(true)
-  const handleCancel = () => setIsEditing(false)
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    // Reset any unsaved changes
+    const fetchUser = async () => {
+      const session = await getSession()
+      if (!session?.user?.email) return
+
+      const res = await fetch(`/api/user?email=${session.user.email}`)
+      if (res.ok) {
+        const data = await res.json()
+        setUser(data)
+      }
+    }
+    fetchUser()
+  }
 
   const handleSave = async () => {
+    if (!user) return
+
     setIsSaving(true)
     try {
       const response = await fetch("/api/user/update", {
@@ -59,14 +94,16 @@ export default function PersonalInfoPage() {
       })
 
       const data = await response.json()
+
       if (response.ok) {
         toast.success("Profile updated successfully!")
         setIsEditing(false)
       } else {
-        toast.error(data.message || "Error updating profile")
+        throw new Error(data.error || "Failed to update profile")
       }
     } catch (error) {
-      toast.error("An error occurred while saving")
+      console.error("Error saving profile:", error)
+      toast.error(error instanceof Error ? error.message : "An error occurred while saving")
     } finally {
       setIsSaving(false)
     }
@@ -74,26 +111,74 @@ export default function PersonalInfoPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setUser((prev: any) => ({ ...prev, [name]: value }))
+    setUser((prev) => (prev ? { ...prev, [name]: value } : null))
   }
 
-  const handleGenderChange = (value: string) => setUser((prev: any) => ({ ...prev, gender: value }))
-
-  const handleAddTag = (field: string) => (tag: string) => {
-    if (!user[field]?.includes(tag)) {
-      setUser((prev: any) => ({ ...prev, [field]: [...(prev[field] || []), tag] }))
-    }
+  const handleGenderChange = (value: string) => {
+    setUser((prev) => (prev ? { ...prev, gender: value } : null))
   }
 
-  const handleRemoveTag = (field: string) => (tag: string) => {
-    setUser((prev: any) => ({ ...prev, [field]: prev[field].filter((t: string) => t !== tag) }))
+  const handleAddTag = (field: keyof User) => (tag: string) => {
+    setUser((prev) => {
+      if (!prev) return null
+      const currentTags = prev[field] as string[]
+      if (!currentTags?.includes(tag)) {
+        return { ...prev, [field]: [...(currentTags || []), tag] }
+      }
+      return prev
+    })
   }
 
-  if (!user) return <p>Loading...</p>
+  const handleRemoveTag = (field: keyof User) => (tag: string) => {
+    setUser((prev) => {
+      if (!prev) return null
+      const currentTags = prev[field] as string[]
+      return { ...prev, [field]: currentTags.filter((t) => t !== tag) }
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <main className="flex-grow container mx-auto px-4 py-8">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-8 w-48" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i}>
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <main className="flex-grow container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="flex items-center justify-center p-6">
+              <p className="text-destructive">{error}</p>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    )
+  }
+
+  if (!user) return null
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8">
         <Card>
           <CardHeader>
@@ -103,17 +188,32 @@ export default function PersonalInfoPage() {
             <div className="space-y-6">
               <div>
                 <Label htmlFor="name">Name</Label>
-                {isEditing ? <Input id="name" name="name" value={user.name} onChange={handleChange} /> : <p className="mt-1">{user.name}</p>}
+                {isEditing ? (
+                  <Input id="name" name="name" value={user.name} onChange={handleChange} className="mt-1" />
+                ) : (
+                  <p className="mt-1">{user.name}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="age">Age</Label>
-                {isEditing ? <Input id="age" name="age" value={user.age || ""} onChange={handleChange} /> : <p className="mt-1">{user.age}</p>}
+                {isEditing ? (
+                  <Input
+                    id="age"
+                    name="age"
+                    type="number"
+                    value={user.age || ""}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1">{user.age || "Not specified"}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="gender">Gender</Label>
                 {isEditing ? (
-                  <Select onValueChange={handleGenderChange} defaultValue={user.gender}>
-                    <SelectTrigger className="w-full">
+                  <Select onValueChange={handleGenderChange} value={user.gender || undefined}>
+                    <SelectTrigger className="w-full mt-1">
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -123,7 +223,7 @@ export default function PersonalInfoPage() {
                     </SelectContent>
                   </Select>
                 ) : (
-                  <p className="mt-1">{user.gender}</p>
+                  <p className="mt-1">{user.gender || "Not specified"}</p>
                 )}
               </div>
               <div>
@@ -138,27 +238,41 @@ export default function PersonalInfoPage() {
                   />
                 ) : (
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {user.interests?.map((interest: string) => (
+                    {user.interests?.map((interest) => (
                       <Badge key={interest} variant="secondary">
                         {interest}
                       </Badge>
                     ))}
+                    {user.interests?.length === 0 && <p className="text-muted-foreground">No interests specified</p>}
                   </div>
                 )}
               </div>
               <div>
                 <Label htmlFor="introduction">Introduction</Label>
                 {isEditing ? (
-                  <Textarea id="introduction" name="introduction" value={user.introduction || ""} onChange={handleChange} />
+                  <Textarea
+                    id="introduction"
+                    name="introduction"
+                    value={user.introduction || ""}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
                 ) : (
-                  <p className="mt-1">{user.introduction}</p>
+                  <p className="mt-1">{user.introduction || "No introduction provided"}</p>
                 )}
               </div>
               <div className="flex justify-end space-x-4 mt-6">
                 {isEditing ? (
                   <>
                     <Button onClick={handleSave} disabled={isSaving}>
-                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save"}
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save"
+                      )}
                     </Button>
                     <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
                       Cancel
@@ -172,6 +286,8 @@ export default function PersonalInfoPage() {
           </CardContent>
         </Card>
       </main>
+      <Toaster position="bottom-right" />
     </div>
   )
 }
+

@@ -23,6 +23,7 @@ interface EventModalProps {
   isOpen: boolean
   onClose: () => void
   event: any
+  onSuccess?: () => void; // Add onSuccess callback
 }
 
 const formSchema = z.object({
@@ -44,7 +45,7 @@ const formSchema = z.object({
   }),
 })
 
-export default function EventModal({ isOpen, onClose, event }: EventModalProps) {
+export default function EventModal({ isOpen, onClose, event, onSuccess }: EventModalProps) {
   const { toast } = useToast()
   const [openLocation, setOpenLocation] = useState(false)
   const [openCategory, setOpenCategory] = useState(false)
@@ -109,7 +110,8 @@ export default function EventModal({ isOpen, onClose, event }: EventModalProps) 
       })
 
       if (result.type !== "Error") {
-        onClose()
+        onClose();
+        onSuccess?.();
       }
     } catch (error) {
       console.error("Error in onSubmit:", error)

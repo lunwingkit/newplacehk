@@ -7,19 +7,20 @@ import { Badge } from "@/components/ui/badge"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { Event, News } from "@prisma/client"
+import { cardData, content } from "@/lib/constant"
 
 async function getFeaturedEvents() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/featured-events`, {
     cache: "no-store",
   })
   if (!res.ok) {
-    throw new Error("Failed to fetch featured events")
+    throw new Error("Failed to fetch 近期活動")
   }
   return res.json()
 }
 
 async function getNewsItems() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/featured-news`, {
     cache: "no-store",
   })
   if (!res.ok) {
@@ -31,7 +32,7 @@ async function getNewsItems() {
 // Replace the existing FeaturedEventsSkeleton function with this updated version
 function FeaturedEventsSkeleton() {
   return (
-    <div className="relative px-12">
+    <div className="relative md:px-12">
       <div className="flex space-x-4 overflow-hidden">
         {[1, 2].map((i) => (
           <div key={i} className="flex-none w-full md:w-1/2 pr-4">
@@ -74,7 +75,7 @@ function NewsSkeleton() {
 
 function FeaturedEvents({ events }: { events: Event[] }) {
   return (
-    <div className="relative px-12">
+    <div className="relative md:px-12">
       <Carousel opts={{ loop: true, align: "start" }} className="w-full">
         <CarouselContent className="-ml-4">
           {events.map((event: Event) => (
@@ -108,22 +109,24 @@ function FeaturedEvents({ events }: { events: Event[] }) {
     </div>
   )
 }
-
 function NewsItems({ items }: { items: News[] }) {
+  const FALLBACK_IMAGE = "/placeholder.svg?height=100&width=100";
+
   return (
     <div className="space-y-6">
       {items.map((item: News) => (
         <Card key={item.id}>
           <CardContent className="flex items-center space-x-4 p-4">
             <Image
-              src={item.image || "/placeholder.svg?height=100&width=100"}
+              src={item.image && isValidImageUrl(item.image) ? item.image : FALLBACK_IMAGE}
               alt={item.title}
               width={100}
               height={100}
               className="rounded-lg"
+              unoptimized // Add this if you're using external images
             />
             <div className="flex-grow">
-              <Link href={`/news/${item.slug}`} className="text-xl font-semibold hover:underline">
+              <Link href={`/news/${item.id}`} className="text-xl font-semibold hover:underline">
                 {item.title}
               </Link>
               <p className="text-muted-foreground text-sm mb-2">{new Date(item.publishedAt).toLocaleDateString()}</p>
@@ -142,7 +145,19 @@ function NewsItems({ items }: { items: News[] }) {
         </Card>
       ))}
     </div>
-  )
+  );
+}
+
+// Optional: Basic URL validation function
+function isValidImageUrl(url: string): boolean {
+  try {
+    // Check if it's a valid URL format
+    new URL(url);
+    // Check if it ends with common image extensions
+    return /\.(jpg|jpeg|png|gif|svg|webp)$/i.test(url);
+  } catch {
+    return false;
+  }
 }
 
 export default async function Home() {
@@ -152,44 +167,43 @@ export default async function Home() {
         {/* Hero Section */}
         <section className="bg-primary text-primary-foreground py-20">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl font-bold mb-4">Welcome to Event Showcase</h1>
-            <p className="text-xl mb-8">Discover and Experience Unforgettable Events</p>
+            <h1 className="text-4xl font-bold mb-4">歡迎來到 友趣館xNewplacehk！</h1>
+            <p className="text-xl mb-8">桌遊、劇本殺、交友聯誼 各種活動應有盡有!</p>
             <Button asChild>
-              <Link href="/events">Explore Events</Link>
-            </Button>
+              <Link href="/events" className="inline-block bg-white text-black dark:bg-blue-600 dark:text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                發掘更多
+              </Link>
+              </Button>
           </div>
         </section>
 
-        {/* Featured Events Carousel */}
+        {/* 近期活動 Carousel */}
         <section className="py-16 bg-gradient-to-b from-primary/10 to-background">
           <div className="container mx-auto px-4">
-            <h2 className="text-4xl font-bold mb-8 text-center">Featured Events</h2>
+            <h2 className="text-4xl font-bold mb-8 text-center">近期活動</h2>
             <Suspense fallback={<FeaturedEventsSkeleton />}>
               <FeaturedEventsContent />
             </Suspense>
           </div>
         </section>
 
-        {/* About Us Section */}
+        {/* 關於我們 Section */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-8 text-center">About Us</h2>
+            <h2 className="text-3xl font-bold mb-8 text-center">關於我們</h2>
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
                 <p className="text-lg mb-4">
-                  Event Showcase is your premier destination for discovering and experiencing the most exciting events
-                  in your area. We curate a diverse range of gatherings, from intimate local meetups to large-scale
-                  festivals, ensuring there's something for everyone.
+                  {content.intro.zh}
                 </p>
                 <p className="text-lg">
-                  Our mission is to connect event organizers with enthusiastic attendees, fostering a vibrant community
-                  of shared experiences and unforgettable moments.
+                  {content.mission.zh}
                 </p>
               </div>
               <div className="relative h-64 md:h-full">
                 <Image
                   src="/placeholder.svg?height=400&width=600"
-                  alt="About Event Showcase"
+                  alt="About 友趣館xNewplacehk"
                   layout="fill"
                   objectFit="cover"
                   className="rounded-lg"
@@ -201,35 +215,25 @@ export default async function Home() {
 
         {/* Target Audience Section */}
         <section className="bg-muted py-16">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-8 text-center">Who We Serve</h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="text-xl font-semibold mb-2">Event Enthusiasts</h3>
-                  <p>Individuals looking for unique and exciting experiences, from concerts to workshops.</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="text-xl font-semibold mb-2">Event Organizers</h3>
-                  <p>Creators and planners seeking to showcase their events to a wider, engaged audience.</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="text-xl font-semibold mb-2">Local Businesses</h3>
-                  <p>Companies looking to promote their services or participate in community events.</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold mb-8 text-center">我們的服務對象</h2>
+        <div className="grid md:grid-cols-3 gap-8">
+          {cardData.map((card, index) => (
+            <Card key={index}>
+              <CardContent className="pt-6">
+                <h3 className="text-xl font-semibold mb-2">{card.title}</h3>
+                <p>{card.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </section>
 
         {/* News Section */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-8 text-center">Latest News</h2>
+            <h2 className="text-3xl font-bold mb-8 text-center">最新消息</h2>
             <Suspense fallback={<NewsSkeleton />}>
               <NewsContent />
             </Suspense>
@@ -239,7 +243,7 @@ export default async function Home() {
 
       <footer className="bg-primary text-primary-foreground py-8">
         <div className="container mx-auto px-4 text-center">
-          <p>&copy; 2025 Event Showcase. All rights reserved.</p>
+          <p>&copy; 2025 友趣館xNewplacehk. All rights reserved.</p>
         </div>
       </footer>
     </div>
@@ -251,7 +255,7 @@ async function FeaturedEventsContent() {
   return featuredEvents.length > 0 ? (
     <FeaturedEvents events={featuredEvents} />
   ) : (
-    <p className="text-center">No featured events available at the moment.</p>
+    <p className="text-center">目前未有任何近期活動</p>
   )
 }
 
@@ -260,7 +264,7 @@ async function NewsContent() {
   return newsItems.length > 0 ? (
     <NewsItems items={newsItems} />
   ) : (
-    <p className="text-center">No news items available at the moment.</p>
+    <p className="text-center">目前未有任何消息</p>
   )
 }
 

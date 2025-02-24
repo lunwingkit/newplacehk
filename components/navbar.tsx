@@ -115,7 +115,7 @@ export function Navbar() {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Login to Event Showcase</DialogTitle>
+          <DialogTitle>Login to 友趣館xNewplacehk</DialogTitle>
           <DialogDescription>Choose your preferred login method</DialogDescription>
         </DialogHeader>
         <Button onClick={handleLogin} className="w-full">
@@ -132,7 +132,7 @@ export function Navbar() {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="text-2xl font-bold">
-              Event Showcase
+              友趣館xNewplacehk
             </Link>
 
             {/* Desktop Navigation */}

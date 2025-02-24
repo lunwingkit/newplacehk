@@ -11,7 +11,7 @@ import { Navbar } from "@/components/navbar"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Event Showcase",
+  title: "Soulmate 友趣館",
   description: "Discover and experience unforgettable events",
   generator: "v0.dev",
 }

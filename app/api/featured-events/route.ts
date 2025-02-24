@@ -23,7 +23,7 @@ export async function GET() {
     })
     return NextResponse.json(featuredEvents)
   } catch (error) {
-    console.error("Error fetching featured events:", error)
+    console.error("Error fetching 近期活動:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }

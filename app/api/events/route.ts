@@ -5,9 +5,7 @@ import prisma from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('bedugdebug. events GET');
     const searchParams = request.nextUrl.searchParams;
-    console.log(searchParams);
 
     const page = Number.parseInt(searchParams.get("page") || "1", 10);
     const pageSize = Number.parseInt(searchParams.get("pageSize") || "10", 10);
@@ -21,7 +19,6 @@ export async function GET(request: NextRequest) {
       prisma.event.count(),
     ]);
 
-    console.log(items);
     return NextResponse.json({
       items,
       totalPages: Math.ceil(totalCount / pageSize),
@@ -39,7 +36,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('bedugdebug. events POST');
     const searchParams = request.nextUrl.searchParams;
 
     const page = Number.parseInt(searchParams.get("page") || "1", 10);
@@ -61,7 +57,6 @@ export async function POST(request: NextRequest) {
       totalCount: totalCount,
     });
   } catch (error) {
-    console.error("Failed to fetch events:", error);
     return NextResponse.json(
       { error: "Failed to fetch events" },
       { status: 500 }

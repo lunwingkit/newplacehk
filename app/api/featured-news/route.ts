@@ -22,6 +22,7 @@ export async function GET() {
       },
     })
 
+    console.log(newsItems);
     return NextResponse.json(newsItems)
   } catch (error) {
     console.error("Error fetching news items:", error)

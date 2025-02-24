@@ -18,3 +18,23 @@ export async function DELETE(
     );
   }
 }
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const id = params.id
+
+  try {
+    const article = await prisma.news.findUnique({
+      where: { id },
+    })
+
+    if (!article) {
+      return NextResponse.json({ error: "News article not found" }, { status: 404 })
+    }
+
+    return NextResponse.json(article)
+  } catch (error) {
+    console.error("Error fetching news article:", error)
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  }
+}
+

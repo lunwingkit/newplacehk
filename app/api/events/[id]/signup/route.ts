@@ -5,11 +5,12 @@ import { EventStatus, SignUpStatus } from "@prisma/client";
 
 export async function POST(request: NextRequest, { params }: { params: { eventId: string } }) {
   try {
+    console.log('wtf')
     const session = await auth();
 
     // Check if the user is authenticated
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized", message: "You have not yet logged in yet." }, { status: 401 });
     }
 
     const { eventId } = params;
@@ -22,17 +23,17 @@ export async function POST(request: NextRequest, { params }: { params: { eventId
 
     // Check if the event exists
     if (!event) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      return NextResponse.json({ error: "Event not found", message: "You have not yet logged in yet." }, { status: 404 });
     }
 
     // Check if the event is open for sign-ups
     if (event.status !== EventStatus.UPCOMING) {
-      return NextResponse.json({ error: "Event is not open for sign-ups" }, { status: 400 });
+      return NextResponse.json({ error: "Event is not open for sign-ups", message: "You have not yet logged in yet." }, { status: 400 });
     }
 
     // Check if the event is at full capacity
     if (event.signedUpUsers.length >= event.capacity) {
-      return NextResponse.json({ error: "Event is at full capacity" }, { status: 400 });
+      return NextResponse.json({ error: "Event is at full capacity", message: "You have not yet logged in yet." }, { status: 400 });
     }
 
     // Fetch the user
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest, { params }: { params: { eventId
 
     // Check if the user exists
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: "User not found", message: "You have not yet logged in yet." }, { status: 404 });
     }
 
     // Check if the user is already signed up for the event
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest, { params }: { params: { eventId
     });
 
     if (existingSignUp) {
-      return NextResponse.json({ error: "User is already signed up for this event" }, { status: 400 });
+      return NextResponse.json({ error: "User is already signed up for this event", message: "You have not yet logged in yet." }, { status: 400 });
     }
 
     // Create a new EventsSignedUpByUsers record
@@ -78,6 +79,6 @@ export async function POST(request: NextRequest, { params }: { params: { eventId
     });
   } catch (error) {
     console.error("Error signing up for event:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error", message: "You have not yet logged in yet." }, { status: 500 });
   }
 }

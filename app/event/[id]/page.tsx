@@ -221,7 +221,7 @@ export default function EventPage({ params }: { params: { id: string } }) {
       <main className="flex-grow container mx-auto px-4 py-8">{event && <EventDetails event={event} />}</main>
       <footer className="bg-primary text-primary-foreground py-8">
         <div className="container mx-auto px-4 text-center">
-          <p>&copy; 2025 Event Showcase. All rights reserved.</p>
+          <p>&copy; 2025 友趣館xNewplacehk. All rights reserved.</p>
         </div>
       </footer>
     </div>

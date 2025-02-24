@@ -20,9 +20,12 @@ import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc"
 import timezone from "dayjs/plugin/timezone"
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import type { Event } from "@prisma/client"
+import type { Event as EventFromPrisma} from "@prisma/client"
 import { EventStatus } from "@prisma/client"
 
+interface Event extends EventFromPrisma {
+  isSigningUp: boolean;
+}
 // Extend dayjs with plugins
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -40,13 +43,16 @@ const fetchEvents = async ({ pageParam = 1 }) => {
 }
 
 const signUpForEvent = async (eventId: string) => {
-  const response = await fetch(`/api/events/${eventId}/signup`, { method: "POST" })
-  if (!response.ok) {
-    throw new Error("Failed to sign up for event")
-  }
-  return response.json()
-}
+  const response = await fetch(`/api/events/${eventId}/signup`, { method: "POST" });
 
+  if (!response.ok) {
+    // Parse the error response from the API
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Failed to sign up for event");
+  }
+
+  return response.json();
+};
 const fetchUserEvents = async () => {
   const response = await fetch("/api/user/events")
   if (!response.ok) {
@@ -120,15 +126,22 @@ export default function EventsPage() {
     },
   })
 
-  const handleSignUp = async (eventId: string) => {
+  const handleSignUp = async (event: Event) => {
     try {
-      await signUpMutation.mutateAsync(eventId)
-      toast.success("Successfully signed up for event")
+      event.isSigningUp = true;
+      await signUpMutation.mutateAsync(event.id);
+      toast.success("Successfully signed up for event");
     } catch (error) {
-      toast.error("Failed to sign up for event")
+      // Display the error message in the toast
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to sign up for event");
+      }
+    } finally {
+      event.isSigningUp = false;
     }
-  }
-
+  };
   const toggleAccordion = (month: string) => {
     setOpenAccordions((prev) => (prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]))
   }
@@ -254,14 +267,14 @@ export default function EventsPage() {
                               <DialogFooter className="mt-4">
                                 <Button
                                   className="w-full"
-                                  onClick={() => handleSignUp(event.id)}
+                                  onClick={() => handleSignUp(event)}
                                   disabled={
                                     userEvents?.signedUpEvents.includes(event.id) ||
                                     signUpMutation.isPending ||
                                     event.status !== EventStatus.UPCOMING
                                   }
                                 >
-                                  {signUpMutation.isPending ? (
+                                  {event.isSigningUp ? (
                                     <>
                                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                       Signing Up...
@@ -278,14 +291,14 @@ export default function EventsPage() {
                             </DialogContent>
                           </Dialog>
                           <Button
-                            onClick={() => handleSignUp(event.id)}
+                            onClick={() => handleSignUp(event)}
                             disabled={
                               userEvents?.signedUpEvents.includes(event.id) ||
                               signUpMutation.isPending ||
                               event.status !== EventStatus.UPCOMING
                             }
                           >
-                            {signUpMutation.isPending ? (
+                            {event.isSigningUp ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Signing Up...
@@ -326,7 +339,7 @@ export default function EventsPage() {
 
       <footer className="bg-primary text-primary-foreground py-6">
         <div className="container mx-auto px-4 text-center">
-          <p>&copy; 2025 Event Showcase. All rights reserved.</p>
+          <p>&copy; 2025 友趣館xNewplacehk. All rights reserved.</p>
         </div>
       </footer>
       <Toaster position="bottom-right" />
